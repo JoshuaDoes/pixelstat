@@ -41,9 +41,9 @@ func (n *NodeCurrent) Value() *crunchio.Buffer {
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
 
-  microA := str2int64(v.String())
+  microA := str2float(v.String())
   milliA := microA / 1000
 
-  v = crunchio.NewBuffer([]byte(int642str(milliA)))
+  v = crunchio.NewBuffer([]byte(float2str(milliA, 2)))
   return v
 }

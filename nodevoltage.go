@@ -41,9 +41,9 @@ func (n *NodeVoltage) Value() *crunchio.Buffer {
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
 
-  microV := str2int64(v.String())
+  microV := str2float(v.String())
   milliV := microV / 1000
 
-  v = crunchio.NewBuffer([]byte(int642str(milliV)))
+  v = crunchio.NewBuffer([]byte(float2str(milliV, 2)))
   return v
 }
