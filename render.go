@@ -1,6 +1,7 @@
 package main
 
 import (
+  "github.com/JoshuaDoes/crunchio"
   "seehuhn.de/go/ncurses"
 
   "fmt"
@@ -16,57 +17,51 @@ type Renderer struct {
   sync.Mutex
   *NodeBase
 
-  pollCnt int64
-  fpsTime time.Time
-  frames  int64
-  fpsLast float64
+  hz         time.Duration
+  pollCnt    int64
 }
 
-func NewRenderer() *Renderer {
+func NewRenderer(hz int) *Renderer {
   r := new(Renderer)
   r.NodeBase = NewNodeBase()
+  r.hz = hertz(time.Duration(hz))
+  terminal = ncurses.Init()
   return r
 }
 
-func (r *Renderer) RefreshTerminal(hz int) chan bool {
-  terminal = ncurses.Init()
-  stopper := loop(hertz(time.Duration(hz)), r.terminal)
-  go func(stopper chan bool, r *Renderer) {
-    <- stopper
-    r.Lock()
-    defer r.Unlock()
-    ncurses.EndWin()
-    terminal = nil
-  }(stopper, r)
-  return stopper
+func (r *Renderer) Close() {
+  ncurses.EndWin()
+  terminal = nil
 }
 
-func (r *Renderer) terminal() {
+func (r *Renderer) Value() *crunchio.Buffer {
   r.Lock()
   defer r.Unlock()
   if terminal == nil {
-    return
+    return nil
   }
   
   nodes := r.Nodes()
   pollCnt := int64(0)
   for i := 0; i < len(nodes); i++ {
     n := nodes[i]
+    if n.Name() == "renderer" {
+      continue
+    }
     pollCnt += n.GetTracker().Value(n.Name()).Polls()
   }
   if pollCnt <= r.pollCnt {
-    return
+    return nil
   }
   r.pollCnt = pollCnt
-
-  if r.fpsTime.IsZero() {
-    r.fpsTime = time.Now()
-  }
 
   nameLen := 0
   unitLen := 0
   for i := 0; i < len(nodes); i++ {
     n := nodes[i]
+    if n.Name() == "renderer" {
+      continue
+    }
     if nl := len(n.Name()); nl > nameLen {
       nameLen = nl
     }
@@ -80,6 +75,9 @@ func (r *Renderer) terminal() {
   avg := "Average:\n"
   for i := 0; i < len(nodes); i++ {
     n := nodes[i]
+    if n.Name() == "renderer" {
+      continue
+    }
     u := n.Unit()
     tv := n.GetTracker().Value(n.Name())
     v := tv.Value()
@@ -166,23 +164,25 @@ func (r *Renderer) terminal() {
   }
 
   if terminal == nil {
-    return
+    return nil
   }
   terminal.Erase()
-  terminal.Printf("FPS: %.2f\n\n", r.fpsLast)
+  terminal.Printf("FPS: %.2f\n\n", r.GetTracker().Value(r.Name()).PollsPerSecond())
   terminal.Printf("%s\n", live)
   terminal.Printf("%s\n", avg)
   terminal.Refresh()
 
-  r.frames++
-  delta := time.Since(r.fpsTime)
-  if delta.Seconds() >= 1 {
-    r.fpsTime = time.Now()
-    r.fpsLast = float64(r.frames) / (((float64(delta.Nanoseconds()) / 1000) / 1000) / 1000)
-    r.frames = 0
-  }
+  return crunchio.NewBuffer(make([]byte, 1))
 }
 
 func (r *Renderer) Name() string {
   return "renderer"
+}
+
+func (r *Renderer) Rate() time.Duration {
+  return r.hz
+}
+
+func (r *Renderer) ValueLen() int64 {
+  return 1
 }

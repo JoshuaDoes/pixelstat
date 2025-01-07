@@ -46,6 +46,9 @@ func (tv *TrackerValue) getValue() {
 
   n := tv.node
   v := n.Value()
+  if v == nil || v.ByteCapacity() == 0 {
+    return
+  }
 
   switch tv.node.ValueType() {
   case "i32":
@@ -89,18 +92,23 @@ func (tv *TrackerValue) getValue() {
       tv.sum[i] += f64s[i]
     }
   }
+
   v.Seek(0, 0)
-
   tv.cnt++
-  tv.pps++
-  delta := time.Since(tv.ppsTime)
-  if delta.Seconds() >= 1 {
-    tv.ppsTime = time.Now()
-    tv.ppsLast = float64(tv.pps) / (((float64(delta.Nanoseconds()) / 1000) / 1000) / 1000)
-    tv.pps = 0
-  }
-
   tv.value = v
+
+  go func(tv *TrackerValue) {
+    tv.Lock()
+    defer tv.Unlock()
+
+    tv.pps++
+    delta := time.Since(tv.ppsTime)
+    if delta.Seconds() >= 1 {
+      tv.ppsTime = time.Now()
+      tv.ppsLast = float64(tv.pps) / (((float64(delta.Nanoseconds()) / 1000) / 1000) / 1000)
+      tv.pps = 0
+    }
+  }(tv)
 }
 
 func (tv *TrackerValue) Value() *crunchio.Buffer {

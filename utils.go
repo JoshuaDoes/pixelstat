@@ -57,15 +57,17 @@ func hertz(hz time.Duration) time.Duration {
 func loop(pace time.Duration, fnc func()) chan bool {
   stopper := make(chan bool)
   go func(stopper chan bool, pace time.Duration, fnc func()) {
+    next := time.Now().Add(pace)
     for {
-      deadline := time.Now().Add(pace)
+      time.Sleep(time.Until(next))
+      fnc()
       select {
       case <- stopper:
         return
       default:
-        fnc()
+        //pass
       }
-      time.Sleep(time.Until(deadline))
+      next = next.Add(pace)
     }
   }(stopper, pace, fnc)
   return stopper
