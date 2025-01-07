@@ -28,11 +28,6 @@ func main() {
   signal.Notify(sig, syscall.SIGINT)  //Keyboard interrupt
   signal.Notify(sig, syscall.SIGHUP)  //Terminal disappeared
   signal.Notify(sig, syscall.SIGKILL) //Process abandoned by kernel, how are we here???
-
-  go func() {
-    os.Stdin.Read([]byte{0})
-    sig <- syscall.SIGINT
-  }()
   <-sig
 
   //stopper <- true
