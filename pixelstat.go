@@ -1,12 +1,21 @@
 package main
 
 import (
+  "github.com/spf13/pflag"
+
   "os"
   "os/signal"
   "syscall"
 )
 
+var (
+  refreshRate int = 480
+)
+
 func main() {
+  pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate")
+  pflag.Parse()
+
   r := NewRenderer()
 
   t := NewTracker(
@@ -21,7 +30,7 @@ func main() {
   )
 
   t.Start()
-  stopper := r.RefreshTerminal(120)
+  stopper := r.RefreshTerminal(refreshRate)
   _ = stopper
 
   sig := make(chan os.Signal, 1)

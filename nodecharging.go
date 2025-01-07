@@ -30,7 +30,11 @@ func (n *NodeCharging) Unit() string {
   return ""
 }
 
-func (n *NodeCharging) ValueLen() int {
+func (n *NodeCharging) ValueType() string {
+  return "str"
+}
+
+func (n *NodeCharging) ValueLen() int64 {
   return 11
 }
 func (n *NodeCharging) Value() *crunchio.Buffer {
@@ -38,5 +42,6 @@ func (n *NodeCharging) Value() *crunchio.Buffer {
   defer n.Unlock()
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
+  v.Seek(0, 0)
   return v
 }

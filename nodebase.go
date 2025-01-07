@@ -34,7 +34,11 @@ func (n *NodeBase) Unit() string {
   return ""
 }
 
-func (n *NodeBase) ValueLen() int {
+func (n *NodeBase) ValueType() string {
+  return ""
+}
+
+func (n *NodeBase) ValueLen() int64 {
   return 0
 }
 

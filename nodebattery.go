@@ -30,7 +30,11 @@ func (n *NodeBattery) Unit() string {
   return "%"
 }
 
-func (n *NodeBattery) ValueLen() int {
+func (n *NodeBattery) ValueType() string {
+  return "str"
+}
+
+func (n *NodeBattery) ValueLen() int64 {
   return 5
 }
 
@@ -39,5 +43,6 @@ func (n *NodeBattery) Value() *crunchio.Buffer {
   defer n.Unlock()
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
+  v.Seek(0, 0)
   return v
 }

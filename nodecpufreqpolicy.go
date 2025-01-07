@@ -26,15 +26,19 @@ func (n *NodeCPUFreqPolicy) Name() string {
 }
 
 func (n *NodeCPUFreqPolicy) Rate() time.Duration {
-  return hertz(5)
+  return hertz(240)
 }
 
 func (n *NodeCPUFreqPolicy) Unit() string {
   return " MHz"
 }
 
-func (n *NodeCPUFreqPolicy) ValueLen() int {
-  return 4
+func (n *NodeCPUFreqPolicy) ValueType() string {
+  return "i32"
+}
+
+func (n *NodeCPUFreqPolicy) ValueLen() int64 {
+  return 1
 }
 
 func (n *NodeCPUFreqPolicy) Value() *crunchio.Buffer {
@@ -44,9 +48,12 @@ func (n *NodeCPUFreqPolicy) Value() *crunchio.Buffer {
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
 
-  Hz := str2int64(v.String())
+  Hz := strtoi32(v.String())
   MHz := Hz / 1000
 
-  v = crunchio.NewBuffer([]byte(int642str(MHz)))
+  v = crunchio.NewBuffer()
+  v.Grow(4)
+  v.WriteAbstract(MHz)
+  v.Seek(0, 0)
   return v
 }

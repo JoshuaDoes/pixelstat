@@ -42,14 +42,18 @@ func (n *NodeWattage) Name() string {
 }
 
 func (n *NodeWattage) Rate() time.Duration {
-  return hertz(4)
+  return hertz(5)
 }
 
 func (n *NodeWattage) Unit() string {
   return " W"
 }
 
-func (n *NodeWattage) ValueLen() int {
+func (n *NodeWattage) ValueType() string {
+  return "f64"
+}
+
+func (n *NodeWattage) ValueLen() int64 {
   return 7
 }
 
@@ -57,11 +61,14 @@ func (n *NodeWattage) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
 
-  amps := str2float(n.GetTracker().Value("current").String()) / 1000
-  volts := str2float(n.GetTracker().Value("voltage").String()) / 1000
+  amps := n.GetTracker().Value("current").Value().ReadF64LENext(1)[0] / 1000
+  volts := n.GetTracker().Value("voltage").Value().ReadF64LENext(1)[0] / 1000
 
   wattage := amps * volts
 
-  v := crunchio.NewBuffer([]byte(float2str(wattage, 2)))
+  v := crunchio.NewBuffer()
+  v.Grow(8)
+  v.WriteAbstract(wattage)
+  v.Seek(0, 0)
   return v
 }

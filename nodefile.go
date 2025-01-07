@@ -27,6 +27,10 @@ func (n *NodeFile) Name() string {
   return "file"
 }
 
+func (n *NodeFile) ValueType() string {
+  return "raw"
+}
+
 func (n *NodeFile) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()

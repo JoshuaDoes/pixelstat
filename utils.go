@@ -7,26 +7,40 @@ import (
   "time"
 )
 
-func hertz(hz time.Duration) time.Duration {
-  return time.Second / hz
-}
-
-func str2int64(in string) int64 {
+func strtoi64(in string) int64 {
   num, err := strconv.ParseInt(in, 10, 64)
   perr(err)
   return num
 }
-func int642str(in int64) string {
+func i64tostr(in int64) string {
   return fmt.Sprintf("%d", in)
 }
 
-func str2float(in string) float64 {
+func strtoi32(in string) int32 {
+  num, err := strconv.ParseInt(in, 10, 32)
+  perr(err)
+  return int32(num)
+}
+func i32tostr(in int32) string {
+  return fmt.Sprintf("%d", in)
+}
+
+func strtof64(in string) float64 {
   num, err := strconv.ParseFloat(in, 64)
   perr(err)
   return num
 }
-func float2str(in float64, precision int64) string {
-  return fmt.Sprintf("%." + int642str(precision) + "f", in)
+func f64tostr(in float64, precision int64) string {
+  return fmt.Sprintf("%." + i64tostr(precision) + "f", in)
+}
+
+func strtof32(in string) float32 {
+  num, err := strconv.ParseFloat(in, 32)
+  perr(err)
+  return float32(num)
+}
+func f32tostr(in float32, precision int64) string {
+  return fmt.Sprintf("%." + i64tostr(precision) + "f", in)
 }
 
 func perr(err error) {
@@ -36,18 +50,22 @@ func perr(err error) {
   }
 }
 
+func hertz(hz time.Duration) time.Duration {
+  return time.Second / hz
+}
+
 func loop(pace time.Duration, fnc func()) chan bool {
   stopper := make(chan bool)
   go func(stopper chan bool, pace time.Duration, fnc func()) {
     for {
+      deadline := time.Now().Add(pace)
       select {
       case <- stopper:
         return
       default:
-        deadline := time.Now().Add(pace)
         fnc()
-        time.Sleep(time.Until(deadline))
       }
+      time.Sleep(time.Until(deadline))
     }
   }(stopper, pace, fnc)
   return stopper

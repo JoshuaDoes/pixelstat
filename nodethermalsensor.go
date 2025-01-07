@@ -33,14 +33,18 @@ func (n *NodeThermalSensor) Name() string {
 }
 
 func (n *NodeThermalSensor) Rate() time.Duration {
-  return hertz(5)
+  return hertz(8)
 }
 
 func (n *NodeThermalSensor) Unit() string {
   return "°C"
 }
 
-func (n *NodeThermalSensor) ValueLen() int {
+func (n *NodeThermalSensor) ValueType() string {
+  return "f64"
+}
+
+func (n *NodeThermalSensor) ValueLen() int64 {
   return 6
 }
 
@@ -51,8 +55,11 @@ func (n *NodeThermalSensor) Value() *crunchio.Buffer {
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
 
-  c := str2float(v.String()) / 1000
+  temp := strtof64(v.String()) / 1000
 
-  v = crunchio.NewBuffer([]byte(float2str(c, 2)))
+  v = crunchio.NewBuffer()
+  v.Grow(8)
+  v.WriteAbstract(temp)
+  v.Seek(0, 0)
   return v
 }

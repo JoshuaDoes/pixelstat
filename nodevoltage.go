@@ -23,15 +23,19 @@ func (n *NodeVoltage) Name() string {
 }
 
 func (n *NodeVoltage) Rate() time.Duration {
-  return hertz(4)
+  return hertz(5)
 }
 
 func (n *NodeVoltage) Unit() string {
   return " mV"
 }
 
-func (n *NodeVoltage) ValueLen() int {
-  return 5
+func (n *NodeVoltage) ValueType() string {
+  return "f64"
+}
+
+func (n *NodeVoltage) ValueLen() int64 {
+  return 1
 }
 
 func (n *NodeVoltage) Value() *crunchio.Buffer {
@@ -41,9 +45,12 @@ func (n *NodeVoltage) Value() *crunchio.Buffer {
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
 
-  microV := str2float(v.String())
+  microV := strtof64(v.String())
   milliV := microV / 1000
 
-  v = crunchio.NewBuffer([]byte(float2str(milliV, 2)))
+  v = crunchio.NewBuffer()
+  v.Grow(8)
+  v.WriteAbstract(milliV)
+  v.Seek(0, 0)
   return v
 }

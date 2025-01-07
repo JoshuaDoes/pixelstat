@@ -1,10 +1,7 @@
 package main
 
 import (
-  "github.com/JoshuaDoes/crunchio"
-
   "fmt"
-  "sync"
 )
 
 var (
@@ -61,8 +58,8 @@ func (t *Tracker) Node(name string) Node {
   return nil
 }
 
-func (t *Tracker) Value(node string) *crunchio.Buffer {
-  return t.vals[node].Value()
+func (t *Tracker) Value(node string) *TrackerValue {
+  return t.vals[node]
 }
 
 func (t *Tracker) Register(n Node) {
@@ -81,39 +78,4 @@ func (t *Tracker) Register(n Node) {
     tv.node = n
     t.vals[name] = tv
   }
-}
-
-type TrackerValue struct {
-  sync.Mutex
-  node    Node
-  value   *crunchio.Buffer
-  stopper chan bool
-}
-
-func (tv *TrackerValue) start() {
-  if tv.stopper != nil {
-    return
-  }
-
-  if tv.node.Rate() > 0 {
-    tv.stopper = loop(tv.node.Rate(), tv.getValue)
-  }
-}
-
-func (tv *TrackerValue) close() {
-  tv.stopper <- true
-  tv.stopper = nil
-}
-
-func (tv *TrackerValue) getValue() {
-  tv.Lock()
-  defer tv.Unlock()
-  tv.value = tv.node.Value()
-}
-
-func (tv *TrackerValue) Value() *crunchio.Buffer {
-  if tv.value == nil {
-    tv.getValue()
-  }
-  return tv.value
 }
