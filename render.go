@@ -5,6 +5,7 @@ import (
   "seehuhn.de/go/ncurses"
 
   "fmt"
+  "math"
   "sync"
   "time"
 )
@@ -159,7 +160,7 @@ func (r *Renderer) Value() *crunchio.Buffer {
 
     live += fmt.Sprintf(nameF + ": %s\n", n.Name(), vs)
     if as != "" {
-      avg += fmt.Sprintf(nameF + ": %s (%.2fpps, %d)\n", n.Name(), as, tv.PollsPerSecond(), tv.Polls())
+      avg += fmt.Sprintf(nameF + ": %s (%.0fpps, %d)\n", n.Name(), as, math.Round(tv.PollsPerSecond()), tv.Polls())
     }
   }
 
@@ -167,7 +168,7 @@ func (r *Renderer) Value() *crunchio.Buffer {
     return nil
   }
   terminal.Erase()
-  terminal.Printf("FPS: %.2f\n\n", r.GetTracker().Value(r.Name()).PollsPerSecond())
+  terminal.Printf("FPS: %.0f\n\n", math.Round(r.GetTracker().Value(r.Name()).PollsPerSecond()))
   terminal.Printf("%s\n", live)
   terminal.Printf("%s\n", avg)
   terminal.Refresh()
