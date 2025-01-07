@@ -19,13 +19,16 @@ type Renderer struct {
   *NodeBase
 
   hz         time.Duration
+  vrr        bool
+
   pollCnt    int64
 }
 
-func NewRenderer(hz int) *Renderer {
+func NewRenderer(hz int, vrr bool) *Renderer {
   r := new(Renderer)
   r.NodeBase = NewNodeBase()
   r.hz = hertz(time.Duration(hz))
+  r.vrr = vrr
   terminal = ncurses.Init()
   return r
 }
@@ -41,20 +44,23 @@ func (r *Renderer) Value() *crunchio.Buffer {
   if terminal == nil {
     return nil
   }
-  
+
   nodes := r.Nodes()
-  pollCnt := int64(0)
-  for i := 0; i < len(nodes); i++ {
-    n := nodes[i]
-    if n.Name() == "renderer" {
-      continue
+
+  if r.vrr {
+    pollCnt := int64(0)
+    for i := 0; i < len(nodes); i++ {
+      n := nodes[i]
+      if n.Name() == "renderer" {
+        continue
+      }
+      pollCnt += n.GetTracker().Value(n.Name()).Polls()
     }
-    pollCnt += n.GetTracker().Value(n.Name()).Polls()
+    if pollCnt <= r.pollCnt {
+      return nil
+    }
+    r.pollCnt = pollCnt
   }
-  if pollCnt <= r.pollCnt {
-    return nil
-  }
-  r.pollCnt = pollCnt
 
   nameLen := 0
   unitLen := 0

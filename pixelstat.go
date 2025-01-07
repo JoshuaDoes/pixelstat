@@ -9,11 +9,13 @@ import (
 )
 
 var (
-  refreshRate int = 480
+  refreshRate int  = 480
+  vrr         bool = true
 )
 
 func main() {
   pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate")
+  pflag.BoolVar(&vrr, "vrr", vrr, "variable refresh rate")
   pflag.Parse()
 
   t := NewTracker(
@@ -24,7 +26,7 @@ func main() {
     NewNodeWattage(),
     NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
     NewNodeThermal("/sys/class/thermal"),
-    NewRenderer(refreshRate),
+    NewRenderer(refreshRate, vrr),
   )
   t.Start()
 
