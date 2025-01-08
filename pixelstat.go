@@ -27,7 +27,15 @@ func main() {
     NewNodeCurrent("/sys/class/power_supply/battery/current_now"),
     NewNodeWattage(),
     NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
-    NewNodeThermal("/sys/class/thermal"),
+    NewNodeThermal("/sys/class/thermal",
+      "LITTLE", "MID", "BIG",
+      "G3D", "TPU", "soc",
+      "gnss_tcxo_therm", "disp_therm",
+      "usb_pwr_therm", "usb_pwr_therm2",
+      "qi_therm", "battery", "batt_vs", "maxfg",
+      "neutral_therm", "quiet_therm"),
+    NewNodeNetSpeed("/sys/class/net",
+      "wlan0", "rmnet1"),
     NewNodeRenderer(refreshRate, !novrr),
   )
   t.Start(pollingRate)

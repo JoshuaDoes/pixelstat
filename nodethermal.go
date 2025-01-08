@@ -14,6 +14,7 @@ var (
 type NodeThermal struct {
   *NodeBase
   thermalPath string
+  sensors []string
 }
 
 func (n *NodeThermal) SetTracker(t *Tracker) {
@@ -21,28 +22,33 @@ func (n *NodeThermal) SetTracker(t *Tracker) {
   perr(err)
 
   sensors := make([]string, 0)
-  for _, file := range dir {
+  for i := 0; i < len(dir); i++ {
+    file := dir[i]
     if file.Type() != fs.ModeSymlink {
       perr(errThermalsNotSymlink)
     }
+
     sensor := file.Name()
-
-    _, err := os.ReadFile(n.thermalPath + "/" + sensor + "/type")
-    perr(err)
-
-    temp, err := os.ReadFile(n.thermalPath + "/" + sensor + "/temp")
-    if err != nil {
+    found := false
+    for j := 0; j < len(n.sensors); j++ {
+      if n.sensors[j] == sensor {
+        found = true
+        break
+      }
+    }
+    if !found {
       continue
     }
-    if string(temp[:len(temp)-1]) == "0" {
+
+    _, err = os.ReadFile(n.thermalPath + "/" + sensor + "/type")
+    perr(err)
+
+    _, err = os.ReadFile(n.thermalPath + "/" + sensor + "/temp")
+    if err != nil {
       continue
     }
 
     sensors = append(sensors, sensor)
-  }
-
-  if len(sensors) == 0 {
-    perr(errThermals)
   }
 
   for i := 0; i < len(sensors); i++ {
@@ -50,10 +56,11 @@ func (n *NodeThermal) SetTracker(t *Tracker) {
   }
 }
 
-func NewNodeThermal(thermalPath string) *NodeThermal {
+func NewNodeThermal(thermalPath string, sensors ...string) *NodeThermal {
   n := new(NodeThermal)
   n.NodeBase = NewNodeBase()
   n.thermalPath = thermalPath
+  n.sensors = sensors
   return n
 }
 
