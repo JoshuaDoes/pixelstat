@@ -50,6 +50,7 @@ func (n *NodeRenderer) Poll(node string) bool {
     r := new(NodeRender)
     r.p = n
     r.node = t
+    r.tv = n.GetTracker().Value(t.Name())
     n.polls[name] = r
   }
   return n.polls[name].Poll()
@@ -158,6 +159,7 @@ func (n *NodeRenderer) ValueLen() int64 {
 type NodeRender struct {
   p     *NodeRenderer
   node  Node
+  tv    *TrackerValue
   polls int64
   val   string
   avg   string
@@ -175,10 +177,7 @@ func (r *NodeRender) Poll() bool {
 }
 
 func (r *NodeRender) getValue() {
-  n := r.node
-  u := n.Unit()
-  tv := n.GetTracker().Value(n.Name())
-  v := tv.Value()
+  v := r.tv.Value()
   if v.ByteCapacity() == 0 {
     r.val = ""
     r.avg = ""
@@ -187,22 +186,22 @@ func (r *NodeRender) getValue() {
 
   vs := ""
   as := ""
-  vt := n.ValueType()
+  vt := r.node.ValueType()
   switch vt {
   case "raw":
-    length := n.ValueLen()
+    length := r.node.ValueLen()
     if bc := v.ByteCapacity(); bc < length {
       length = bc
     }
-    vs = fmt.Sprintf("% X", v.ReadBytes(0, length)) + u
+    vs = fmt.Sprintf("% X", v.ReadBytes(0, length)) + r.node.Unit()
   case "str":
-    length := n.ValueLen()
+    length := r.node.ValueLen()
     if bc := v.ByteCapacity(); bc < length {
       length = bc
     }
-    vs = string(v.ReadBytes(0, length)) + u
+    vs = string(v.ReadBytes(0, length)) + r.node.Unit()
   case "i32":
-    length := n.ValueLen()
+    length := r.node.ValueLen()
     if bc := v.ByteCapacity(); (bc / 4) < length {
       length = (bc / 4)
     }
@@ -211,11 +210,11 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += i32tostr(v.ReadI32LENext(1)[0]) + u
-      as += f64tostr(tv.Average(i), 0) + u
+      vs += i32tostr(v.ReadI32LENext(1)[0]) + r.node.Unit()
+      as += f64tostr(r.tv.Average(i), 0) + r.node.Unit()
     }
   case "i64":
-    length := n.ValueLen()
+    length := r.node.ValueLen()
     if bc := v.ByteCapacity(); (bc / 8) < length {
       length = (bc / 8)
     }
@@ -224,11 +223,11 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += i64tostr(v.ReadI64LENext(1)[0]) + u
-      as += f64tostr(tv.Average(i), 0) + u
+      vs += i64tostr(v.ReadI64LENext(1)[0]) + r.node.Unit()
+      as += f64tostr(r.tv.Average(i), 0) + r.node.Unit()
     }
   case "f32":
-    length := n.ValueLen()
+    length := r.node.ValueLen()
     if bc := v.ByteCapacity(); (bc / 4) < length {
       length = (bc / 4)
     }
@@ -237,11 +236,11 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += f32tostr(v.ReadF32LENext(1)[0], 2) + u
-      as += f64tostr(tv.Average(i), 2) + u
+      vs += f32tostr(v.ReadF32LENext(1)[0], 2) + r.node.Unit()
+      as += f64tostr(r.tv.Average(i), 2) + r.node.Unit()
     }
   case "f64":
-    length := n.ValueLen()
+    length := r.node.ValueLen()
     if bc := v.ByteCapacity(); (bc / 8) < length {
       length = (bc / 8)
     }
@@ -250,15 +249,15 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += f64tostr(v.ReadF64LENext(1)[0], 2) + u
-      as += f64tostr(tv.Average(i), 2) + u
+      vs += f64tostr(v.ReadF64LENext(1)[0], 2) + r.node.Unit()
+      as += f64tostr(r.tv.Average(i), 2) + r.node.Unit()
     }
   default:
     perr(fmt.Errorf("renderer: invalid type: %s", vt))
   }
 
-  r.val = fmt.Sprintf(r.p.nameFmt + ": %s", n.Name(), vs)
+  r.val = fmt.Sprintf(r.p.nameFmt + ": %s", r.node.Name(), vs)
   if as != "" {
-    r.avg = fmt.Sprintf(r.p.nameFmt + ": %s (%.0fpps, %d)", n.Name(), as, math.Round(tv.PollsPerSecond()), tv.Polls())
+    r.avg = fmt.Sprintf(r.p.nameFmt + ": %s (%.0fpps, %d)", r.node.Name(), as, math.Round(r.tv.PollsPerSecond()), r.tv.Polls())
   }
 }
