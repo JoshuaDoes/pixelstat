@@ -27,7 +27,7 @@ func main() {
     NewNodeCurrent("/sys/class/power_supply/battery/current_now"),
     NewNodeWattage(),
     NewNodeNetSpeed("/sys/class/net",
-      "wlan0", "rmnet1"),
+      "wlan0", "rmnet2"),
     NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
     NewNodeThermal("/sys/class/thermal",
       "LITTLE", "MID", "BIG",
