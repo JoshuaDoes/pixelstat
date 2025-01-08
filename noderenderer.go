@@ -90,23 +90,29 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   }
   pollers := n.Pollers()
 
-  newFrame := false
-  for i := 0; i < len(pollers); i++ {
-    p := pollers[i]
-    go p.Poll()
-    if p.NewFrame() {
-      newFrame = true
-      break
+  go func(n *NodeRenderer) {
+    for i := 0; i < pollers; i++ {
+      go n.GetRender(i).Poll()
     }
-  }
-  if n.vrr && !newFrame {
-    return nil
+  }(n)
+
+  if n.vrr {
+    newFrame := false
+    for i := 0; i < pollers; i++ {
+      if n.GetRender(i).NewFrame() {
+        newFrame = true
+        break
+      }
+    }
+    if !newFrame {
+      return nil
+    }
   }
 
   now := ""
   average := ""
-  for i := 0; i < len(pollers); i++ {
-    p := pollers[i]
+  for i := 0; i < pollers; i++ {
+    p := n.GetRender(i)
     if val := p.val; val != "" {
       now += val + "\n"
     }
@@ -118,8 +124,9 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   if terminal == nil {
     return nil
   }
+  rendertv := n.GetTracker().Value(n.Name())
   terminal.Erase()
-  terminal.Printf("FPS: %.0f\n\n", math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond()))
+  terminal.Printf("%.0f FPS\n\n", math.Round(rendertv.PollsPerSecond()))
   terminal.Printf("Now:\n%s\n", now)
   terminal.Printf("Average:\n%s\n", average)
   terminal.Refresh()
@@ -133,12 +140,12 @@ func (n *NodeRenderer) Close() error {
   return nil
 }
 
-func (n *NodeRenderer) Pollers() []*NodeRender {
-  return n.polls
+func (n *NodeRenderer) Pollers() int {
+  return len(n.polls)
 }
 
 func (n *NodeRenderer) GetRender(i int) *NodeRender {
-  return n.Pollers()[i]
+  return n.polls[i]
 }
 
 type NodeRender struct {
@@ -151,11 +158,16 @@ type NodeRender struct {
   val   string
   avg   string
   newF  bool
+  poll  bool
 }
 
 func (r *NodeRender) Poll() {
+  if r.poll {
+    return
+  }
   r.Lock()
   defer r.Unlock()
+  r.poll = true
 
   n := r.node
   old := r.polls
@@ -164,6 +176,7 @@ func (r *NodeRender) Poll() {
     r.getValue()
     r.newF = true
   }
+  r.poll = false
 }
 
 func (r *NodeRender) NewFrame() bool {
@@ -177,7 +190,7 @@ func (r *NodeRender) NewFrame() bool {
 
 func (r *NodeRender) getValue() {
   v := r.tv.Value()
-  if v.ByteCapacity() == 0 {
+  if v == nil || v.ByteCapacity() == 0 {
     r.val = ""
     r.avg = ""
     return

@@ -9,13 +9,15 @@ import (
 )
 
 var (
+  pollingRate int  = 1920
   refreshRate int  = 1920
-  vrr         bool = true
+  novrr       bool = false
 )
 
 func main() {
-  pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate")
-  pflag.BoolVar(&vrr, "vrr", vrr, "variable refresh rate")
+  pflag.IntVar(&pollingRate, "poll", pollingRate, "max polling rate per node")
+  pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate per renderer")
+  pflag.BoolVar(&novrr, "novrr", false, "disable variable refresh rate")
   pflag.Parse()
 
   t := NewTracker(
@@ -26,9 +28,9 @@ func main() {
     NewNodeWattage(),
     NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
     NewNodeThermal("/sys/class/thermal"),
-    NewNodeRenderer(refreshRate, vrr),
+    NewNodeRenderer(refreshRate, !novrr),
   )
-  t.Start()
+  t.Start(pollingRate)
 
   sig := make(chan os.Signal, 1)
   signal.Notify(sig, syscall.SIGINT)  //Keyboard interrupt
