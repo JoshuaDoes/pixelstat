@@ -35,7 +35,7 @@ func (n *NodeBattery) ValueType() string {
 }
 
 func (n *NodeBattery) ValueLen() int64 {
-  return 5
+  return 3
 }
 
 func (n *NodeBattery) Value() *crunchio.Buffer {

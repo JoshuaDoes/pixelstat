@@ -20,7 +20,7 @@ func NewNodeThermalSensor(thermalPath, sensor string) *NodeThermalSensor {
   data, err := os.ReadFile(thermalPath + "/" + sensor + "/type")
   perr(err)
   ttype := string(data[:len(data)-1])
-  
+
   n := new(NodeThermalSensor)
   n.sensor = sensor
   n.ttype = ttype
@@ -45,7 +45,7 @@ func (n *NodeThermalSensor) ValueType() string {
 }
 
 func (n *NodeThermalSensor) ValueLen() int64 {
-  return 6
+  return 1
 }
 
 func (n *NodeThermalSensor) Value() *crunchio.Buffer {

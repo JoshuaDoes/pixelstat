@@ -9,7 +9,7 @@ import (
 )
 
 var (
-  refreshRate int  = 480
+  refreshRate int  = 120
   vrr         bool = true
 )
 
@@ -26,7 +26,7 @@ func main() {
     NewNodeWattage(),
     NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
     NewNodeThermal("/sys/class/thermal"),
-    NewRenderer(refreshRate, vrr),
+    NewNodeRenderer(refreshRate, vrr),
   )
   t.Start()
 

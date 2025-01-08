@@ -54,7 +54,7 @@ func (n *NodeWattage) ValueType() string {
 }
 
 func (n *NodeWattage) ValueLen() int64 {
-  return 7
+  return 1
 }
 
 func (n *NodeWattage) Value() *crunchio.Buffer {

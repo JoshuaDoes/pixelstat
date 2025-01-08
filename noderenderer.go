@@ -14,7 +14,7 @@ var (
   terminal *ncurses.Window
 )
 
-type Renderer struct {
+type NodeRenderer struct {
   sync.Mutex
   *NodeBase
 
@@ -25,31 +25,31 @@ type Renderer struct {
   pollCnt    int64
 }
 
-func NewRenderer(hz int, vrr bool) *Renderer {
-  r := new(Renderer)
-  r.NodeBase = NewNodeBase()
-  r.hz = hertz(time.Duration(hz))
-  r.vrr = vrr
-  r.null = crunchio.NewBuffer(make([]byte, 1))
+func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
+  n := new(NodeRenderer)
+  n.NodeBase = NewNodeBase()
+  n.hz = hertz(time.Duration(hz))
+  n.vrr = vrr
+  n.null = crunchio.NewBuffer(make([]byte, 1))
   terminal = ncurses.Init()
-  return r
+  return n
 }
 
-func (r *Renderer) Close() {
+func (n *NodeRenderer) Close() {
   ncurses.EndWin()
   terminal = nil
 }
 
-func (r *Renderer) Value() *crunchio.Buffer {
-  r.Lock()
-  defer r.Unlock()
+func (n *NodeRenderer) Value() *crunchio.Buffer {
+  n.Lock()
+  defer n.Unlock()
   if terminal == nil {
     return nil
   }
 
-  nodes := r.Nodes()
+  nodes := n.Nodes()
 
-  if r.vrr {
+  if n.vrr {
     pollCnt := int64(0)
     for i := 0; i < len(nodes); i++ {
       n := nodes[i]
@@ -58,17 +58,17 @@ func (r *Renderer) Value() *crunchio.Buffer {
       }
       pollCnt += n.GetTracker().Value(n.Name()).Polls()
     }
-    if pollCnt <= r.pollCnt {
+    if pollCnt <= n.pollCnt {
       return nil
     }
-    r.pollCnt = pollCnt
+    n.pollCnt = pollCnt
   }
 
   nameLen := 0
   unitLen := 0
   for i := 0; i < len(nodes); i++ {
     n := nodes[i]
-    if n.Name() == "renderer" {
+    if n.ValueType() == "" {
       continue
     }
     if nl := len(n.Name()); nl > nameLen {
@@ -84,9 +84,10 @@ func (r *Renderer) Value() *crunchio.Buffer {
   avg := "Average:\n"
   for i := 0; i < len(nodes); i++ {
     n := nodes[i]
-    if n.Name() == "renderer" {
+    if n.ValueType() == "" {
       continue
     }
+
     u := n.Unit()
     tv := n.GetTracker().Value(n.Name())
     v := tv.Value()
@@ -176,22 +177,22 @@ func (r *Renderer) Value() *crunchio.Buffer {
     return nil
   }
   terminal.Erase()
-  terminal.Printf("FPS: %.0f\n\n", math.Round(r.GetTracker().Value(r.Name()).PollsPerSecond()))
+  terminal.Printf("FPS: %.0f\n\n", math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond()))
   terminal.Printf("%s\n", live)
   terminal.Printf("%s\n", avg)
   terminal.Refresh()
 
-  return r.null
+  return n.null
 }
 
-func (r *Renderer) Name() string {
+func (n *NodeRenderer) Name() string {
   return "renderer"
 }
 
-func (r *Renderer) Rate() time.Duration {
-  return r.hz
+func (n *NodeRenderer) Rate() time.Duration {
+  return n.hz
 }
 
-func (r *Renderer) ValueLen() int64 {
+func (n *NodeRenderer) ValueLen() int64 {
   return 1
 }
