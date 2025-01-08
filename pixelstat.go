@@ -9,7 +9,7 @@ import (
 )
 
 var (
-  refreshRate int  = 120
+  refreshRate int  = 1920
   vrr         bool = true
 )
 
