@@ -52,11 +52,11 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   if n.vrr {
     pollCnt := int64(0)
     for i := 0; i < len(nodes); i++ {
-      n := nodes[i]
-      if n.Name() == "renderer" {
+      t := nodes[i]
+      if t.ValueType() == "" {
         continue
       }
-      pollCnt += n.GetTracker().Value(n.Name()).Polls()
+      pollCnt += t.GetTracker().Value(t.Name()).Polls()
     }
     if pollCnt <= n.pollCnt {
       return nil
