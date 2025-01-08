@@ -93,29 +93,23 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
 
   pollers := n.Pollers()
 
-  newFrame := true
-  if n.vrr {
-    newFrame = false
-  }
+  now := ""
+  average := ""
+  newFrame := false
   for i := 0; i < len(pollers); i++ {
     p := pollers[i]
     if p.Poll() {
       newFrame = true
     }
-  }
-  if !newFrame {
-    return nil
-  }
-
-  now := ""
-  average := ""
-  for i := 0; i < len(pollers); i++ {
-    if val := pollers[i].val; val != "" {
+    if val := p.val; val != "" {
       now += val + "\n"
     }
-    if avg := pollers[i].avg; avg != "" {
+    if avg := p.avg; avg != "" {
       average += avg + "\n"
     }
+  }
+  if n.vrr && !newFrame {
+    return nil
   }
 
   if terminal == nil {
