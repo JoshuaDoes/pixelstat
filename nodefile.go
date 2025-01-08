@@ -49,3 +49,7 @@ func (n *NodeFile) Value() *crunchio.Buffer {
 
   return crunchio.NewBuffer(data)
 }
+
+func (n *NodeFile) Close() error {
+  return n.File.Close()
+}
