@@ -72,3 +72,7 @@ func (n *NodeWattage) Value() *crunchio.Buffer {
   v.Seek(0, 0)
   return v
 }
+
+func (n *NodeWattage) Close() error {
+  return nil
+}

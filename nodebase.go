@@ -45,3 +45,7 @@ func (n *NodeBase) ValueLen() int64 {
 func (n *NodeBase) Value() *crunchio.Buffer {
   return crunchio.NewBuffer(make([]byte, 0))
 }
+
+func (n *NodeBase) Close() error {
+  return nil
+}

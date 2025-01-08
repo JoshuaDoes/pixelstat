@@ -15,4 +15,5 @@ type Node interface {
   ValueType()  string
   ValueLen()   int64
   Value()      *crunchio.Buffer
+  Close()      error
 }

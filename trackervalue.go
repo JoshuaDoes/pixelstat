@@ -34,6 +34,7 @@ func (tv *TrackerValue) start() {
 func (tv *TrackerValue) close() {
   tv.stopper <- true
   tv.stopper = nil
+  perr(tv.node.Close())
 }
 
 func (tv *TrackerValue) getValue() {
