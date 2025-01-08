@@ -21,6 +21,7 @@ type Renderer struct {
   hz         time.Duration
   vrr        bool
 
+  null       *crunchio.Buffer
   pollCnt    int64
 }
 
@@ -29,6 +30,7 @@ func NewRenderer(hz int, vrr bool) *Renderer {
   r.NodeBase = NewNodeBase()
   r.hz = hertz(time.Duration(hz))
   r.vrr = vrr
+  r.null = crunchio.NewBuffer(make([]byte, 1))
   terminal = ncurses.Init()
   return r
 }
@@ -179,7 +181,7 @@ func (r *Renderer) Value() *crunchio.Buffer {
   terminal.Printf("%s\n", avg)
   terminal.Refresh()
 
-  return crunchio.NewBuffer(make([]byte, 1))
+  return r.null
 }
 
 func (r *Renderer) Name() string {
