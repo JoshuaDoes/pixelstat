@@ -26,7 +26,7 @@ type NodeRenderer struct {
   nameFmt    string
   unitLen    int
 
-  polls      map[string]*NodeRender
+  polls      []*NodeRender
 }
 
 func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
@@ -35,32 +35,17 @@ func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
   n.hz = hertz(time.Duration(hz))
   n.vrr = vrr
   n.null = crunchio.NewBuffer(make([]byte, 1))
-  n.polls = make(map[string]*NodeRender)
+  n.polls = make([]*NodeRender, 0)
   terminal = ncurses.Init()
   return n
 }
 
-func (n *NodeRenderer) Poll(node string) bool {
-  t := n.Node(node)
-  if t == nil {
-    return false
-  }
-  name := t.Name()
-  if _, exists := n.polls[name]; !exists {
-    r := new(NodeRender)
-    r.p = n
-    r.node = t
-    r.tv = n.GetTracker().Value(t.Name())
-    n.polls[name] = r
-  }
-  return n.polls[name].Poll()
+func (n *NodeRenderer) Pollers() []*NodeRender {
+  return n.polls
 }
 
-func (n *NodeRenderer) GetRender(node string) *NodeRender {
-  if render, exists := n.polls[node]; exists {
-    return render
-  }
-  return nil
+func (n *NodeRenderer) GetRender(i int) *NodeRender {
+  return n.Pollers()[i]
 }
 
 func (n *NodeRenderer) SetTracker(t *Tracker) {
@@ -79,6 +64,12 @@ func (n *NodeRenderer) SetTracker(t *Tracker) {
     if ul := len(node.Unit()); ul > unitLen {
       unitLen = ul
     }
+
+    r := new(NodeRender)
+    r.p = n
+    r.node = node
+    r.tv = t.Value(node.Name())
+    n.polls = append(n.polls, r)
   }
 
   n.nameLen = nameLen
@@ -100,18 +91,15 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
     return nil
   }
 
-  nodes := n.Nodes()
+  pollers := n.Pollers()
 
   newFrame := true
   if n.vrr {
     newFrame = false
   }
-  for i := 0; i < len(nodes); i++ {
-    t := nodes[i]
-    if t.ValueType() == "" {
-      continue
-    }
-    if n.Poll(t.Name()) {
+  for i := 0; i < len(pollers); i++ {
+    p := pollers[i]
+    if p.Poll() {
       newFrame = true
     }
   }
@@ -121,14 +109,12 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
 
   now := ""
   average := ""
-  for i := 0; i < len(nodes); i++ {
-    if render := n.GetRender(nodes[i].Name()); render != nil {
-      if val := render.val; val != "" {
-        now += val + "\n"
-      }
-      if avg := render.avg; avg != "" {
-        average += avg + "\n"
-      }
+  for i := 0; i < len(pollers); i++ {
+    if val := pollers[i].val; val != "" {
+      now += val + "\n"
+    }
+    if avg := pollers[i].avg; avg != "" {
+      average += avg + "\n"
     }
   }
 
