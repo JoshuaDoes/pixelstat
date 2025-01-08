@@ -40,14 +40,6 @@ func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
   return n
 }
 
-func (n *NodeRenderer) Pollers() []*NodeRender {
-  return n.polls
-}
-
-func (n *NodeRenderer) GetRender(i int) *NodeRender {
-  return n.Pollers()[i]
-}
-
 func (n *NodeRenderer) SetTracker(t *Tracker) {
   nodes := t.Nodes()
 
@@ -78,10 +70,16 @@ func (n *NodeRenderer) SetTracker(t *Tracker) {
   n.Tracker = t
 }
 
-func (n *NodeRenderer) Close() error {
-  ncurses.EndWin()
-  terminal = nil
-  return nil
+func (n *NodeRenderer) Name() string {
+  return "renderer"
+}
+
+func (n *NodeRenderer) Rate() time.Duration {
+  return n.hz
+}
+
+func (n *NodeRenderer) ValueLen() int64 {
+  return 1
 }
 
 func (n *NodeRenderer) Value() *crunchio.Buffer {
@@ -90,26 +88,31 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   if terminal == nil {
     return nil
   }
-
   pollers := n.Pollers()
 
-  now := ""
-  average := ""
   newFrame := false
   for i := 0; i < len(pollers); i++ {
     p := pollers[i]
-    if p.Poll() {
+    go p.Poll()
+    if p.NewFrame() {
       newFrame = true
+      break
     }
+  }
+  if n.vrr && !newFrame {
+    return nil
+  }
+
+  now := ""
+  average := ""
+  for i := 0; i < len(pollers); i++ {
+    p := pollers[i]
     if val := p.val; val != "" {
       now += val + "\n"
     }
     if avg := p.avg; avg != "" {
       average += avg + "\n"
     }
-  }
-  if n.vrr && !newFrame {
-    return nil
   }
 
   if terminal == nil {
@@ -124,36 +127,52 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   return n.null
 }
 
-func (n *NodeRenderer) Name() string {
-  return "renderer"
+func (n *NodeRenderer) Close() error {
+  ncurses.EndWin()
+  terminal = nil
+  return nil
 }
 
-func (n *NodeRenderer) Rate() time.Duration {
-  return n.hz
+func (n *NodeRenderer) Pollers() []*NodeRender {
+  return n.polls
 }
 
-func (n *NodeRenderer) ValueLen() int64 {
-  return 1
+func (n *NodeRenderer) GetRender(i int) *NodeRender {
+  return n.Pollers()[i]
 }
 
 type NodeRender struct {
+  sync.Mutex
+
   p     *NodeRenderer
   node  Node
   tv    *TrackerValue
   polls int64
   val   string
   avg   string
+  newF  bool
 }
 
-func (r *NodeRender) Poll() bool {
+func (r *NodeRender) Poll() {
+  r.Lock()
+  defer r.Unlock()
+
   n := r.node
   old := r.polls
   r.polls = r.p.GetTracker().Value(n.Name()).Polls()
   if r.polls > old {
     r.getValue()
-    return true
+    r.newF = true
   }
-  return false
+}
+
+func (r *NodeRender) NewFrame() bool {
+  r.Lock()
+  defer r.Unlock()
+
+  newF := r.newF
+  r.newF = false
+  return newF
 }
 
 func (r *NodeRender) getValue() {
