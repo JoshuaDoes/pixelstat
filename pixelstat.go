@@ -9,8 +9,8 @@ import (
 )
 
 var (
-  pollingRate int  = 1920
-  refreshRate int  = 1920
+  pollingRate int  = 1000
+  refreshRate int  = 240
   novrr       bool = false
   nothermal   bool = false
   netbits     bool = false
