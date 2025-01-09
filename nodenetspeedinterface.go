@@ -4,6 +4,7 @@ import (
   "github.com/JoshuaDoes/crunchio"
 
   "sync"
+  "time"
 )
 
 type NodeNetSpeedInterface struct {
@@ -12,13 +13,20 @@ type NodeNetSpeedInterface struct {
 
   iF, typ string
   b int64
+  last time.Time
 }
 
 func NewNodeNetSpeedInterface(iFPath, iF, typ string) *NodeNetSpeedInterface {
   n := new(NodeNetSpeedInterface)
+  n.NodeFile = NewNodeFile(iFPath + "/" + iF + "/statistics/" + typ + "_bytes")
   n.iF = iF
   n.typ = typ
-  n.NodeFile = NewNodeFile(iFPath + "/" + iF + "/statistics/" + typ + "_bytes")
+
+  v := n.NodeFile.Value()
+  v.TruncateRight(1) //Remove the newline
+  n.b = strtoi64(v.String())
+  n.last = time.Now()
+
   return n
 }
 
@@ -52,9 +60,10 @@ func (n *NodeNetSpeedInterface) Value() *crunchio.Buffer {
   b := strtoi64(v.String())
   kbps := float64(0)
   if b > n.b {
-    last := b - n.b
-    kbps = (float64(n.Rate()) / float64(last)) / 1000
+    dur := time.Since(n.last)
+    kbps = (float64(dur) / float64(b - n.b)) / 1000
     n.b = b
+    n.last = time.Now()
   }
 
   v = crunchio.NewBuffer()
