@@ -89,11 +89,9 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   }
   pollers := n.Pollers()
 
-  go func(n *NodeRenderer) {
-    for i := 0; i < pollers; i++ {
-      go n.GetRender(i).Poll()
-    }
-  }(n)
+  for i := 0; i < pollers; i++ {
+    n.GetRender(i).Poll()
+  }
 
   if n.vrr {
     newFrame := false
