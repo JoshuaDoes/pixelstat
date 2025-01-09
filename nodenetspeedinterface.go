@@ -3,7 +3,6 @@ package main
 import (
   "github.com/JoshuaDoes/crunchio"
 
-  "fmt"
   "sync"
   "time"
 )
@@ -18,9 +17,9 @@ type NodeNetSpeedInterface struct {
 
   iF, typ string
   bits bool
+  null string
 
   b int64
-  lastUnit string
   lastPoll time.Time
 }
 
@@ -36,6 +35,13 @@ func NewNodeNetSpeedInterface(bits bool, iFPath, iF, typ string) *NodeNetSpeedIn
   n.b = strtoi64(v.String())
   n.lastPoll = time.Now()
 
+  n.null = "0 "
+  if bits {
+    n.null += "bps"
+  } else {
+    n.null += "B/s"
+  }
+
   return n
 }
 
@@ -44,11 +50,11 @@ func (n *NodeNetSpeedInterface) Name() string {
 }
 
 func (n *NodeNetSpeedInterface) Rate() int {
-  return 4
+  return 2
 }
 
 func (n *NodeNetSpeedInterface) Unit() string {
-  return n.lastUnit
+  return ""
 }
 
 func (n *NodeNetSpeedInterface) ValueType() string {
@@ -63,33 +69,35 @@ func (n *NodeNetSpeedInterface) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
 
+  str := n.null
+
   bytes := n.NodeFile.Value()
   bytes.TruncateRight(1) //Remove the newline
   b := strtoi64(bytes.String())
-
-  str := "0 "
-  if n.bits {
-    str += "bps"
-  } else {
-    str += "B/s"
-  }
 
   if b > n.b {
     dur := float64(time.Since(n.lastPoll).Nanoseconds()) / 1000 / 1000 / 1000
     n.lastPoll = time.Now()
 
-    bytes := b - n.b
-    n.b = b
-    bps, unit := byteUnit(float64(bytes) / dur)
-
+    now := b - n.b
     if n.bits {
-      bps *= 8
+      now *= 8
+    }
+    n.b = b
+
+    bps, unit := byteUnit(float64(now) / dur)
+    if n.bits {
       unit += "bps"
     } else {
       unit += "B/s"
     }
 
-    str = fmt.Sprintf("%.2f %s", bps, unit)
+    str = f64tostr(bps, 2) + " " + unit
+  }
+
+  pad := int(n.ValueLen()) - len(str)
+  for i := 0; i < pad; i++ {
+    str = " " + str
   }
 
   return crunchio.NewBuffer([]byte(str))
