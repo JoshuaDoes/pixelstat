@@ -137,9 +137,9 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   h, w := terminal.GetMaxYX()
 
   fps := math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond())
-  str := fmt.Sprintf("%.0f FPS\n", fps)
-  str += "\nNow:\n" + now
-  str += "\nAverage:\n" + average
+  str := fmt.Sprintf("%.0f FPS", fps)
+  str += "\n\nNow:\n" + now
+  str += "\n\nAverage:\n" + average
   lines := strings.Split(str, "\n")
   if len(lines) > h {
     lines = lines[:h]
