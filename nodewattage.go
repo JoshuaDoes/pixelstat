@@ -5,7 +5,6 @@ import (
 
   "fmt"
   "sync"
-  "time"
 )
 
 var (
@@ -16,15 +15,20 @@ var (
 type NodeWattage struct {
   sync.Mutex
   *Tracker
+
+  rate int
 }
 
 func (n *NodeWattage) SetTracker(t *Tracker) {
-  if t.Node("current") == nil {
+  cn := t.Node("current")
+  if cn == nil {
     perr(errWattageNeedCurrent)
   }
-  if t.Node("voltage") == nil {
+  vn := t.Node("voltage")
+  if vn == nil {
     perr(errWattageNeedVoltage)
   }
+  n.rate = cn.Rate() + vn.Rate()
   n.Tracker = t
 }
 
@@ -41,8 +45,8 @@ func (n *NodeWattage) Name() string {
   return "wattage"
 }
 
-func (n *NodeWattage) Rate() time.Duration {
-  return hertz(5)
+func (n *NodeWattage) Rate() int {
+  return n.rate
 }
 
 func (n *NodeWattage) Unit() string {

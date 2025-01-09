@@ -27,14 +27,14 @@ func (tv *TrackerValue) start(maxHz int) {
   }
 
   if tv.node.Rate() > 0 {
-    pace := tv.node.Rate()
+    rate := tv.node.Rate()
     if tv.node.ValueType() != "" {
-      paceMax := hertz(time.Duration(maxHz))
-      if pace < paceMax {
-        pace = paceMax
+      rateMax := maxHz
+      if rate > rateMax {
+        rate = rateMax
       }
     }
-    tv.stopper = loop(pace, tv.getValue)
+    tv.stopper = loop(rate, tv.getValue)
   }
 }
 

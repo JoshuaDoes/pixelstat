@@ -2,8 +2,6 @@ package main
 
 import (
   "github.com/JoshuaDoes/crunchio"
-
-  "time"
 )
 
 type NodeBase struct {
@@ -26,7 +24,7 @@ func (n *NodeBase) Name() string {
   return "base"
 }
 
-func (n *NodeBase) Rate() time.Duration {
+func (n *NodeBase) Rate() int {
   return 0
 }
 

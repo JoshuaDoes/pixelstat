@@ -2,15 +2,13 @@ package main
 
 import (
   "github.com/JoshuaDoes/crunchio"
-
-  "time"
 )
 
 type Node interface {
   SetTracker(*Tracker)
   GetTracker() *Tracker
   Name()       string
-  Rate()       time.Duration
+  Rate()       int
   Unit()       string
   ValueType()  string
   ValueLen()   int64

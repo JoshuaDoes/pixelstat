@@ -26,7 +26,7 @@ func NewTracker(nodes ...Node) *Tracker {
 
 func (t *Tracker) Start(maxHz int) {
   for _, tv := range t.vals {
-    tv.start(maxHz)
+    go tv.start(maxHz)
   }
 }
 

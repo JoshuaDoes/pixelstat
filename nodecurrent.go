@@ -4,7 +4,6 @@ import (
   "github.com/JoshuaDoes/crunchio"
 
   "sync"
-  "time"
 )
 
 type NodeCurrent struct {
@@ -22,8 +21,8 @@ func (n *NodeCurrent) Name() string {
   return "current"
 }
 
-func (n *NodeCurrent) Rate() time.Duration {
-  return hertz(5)
+func (n *NodeCurrent) Rate() int {
+  return 5
 }
 
 func (n *NodeCurrent) Unit() string {

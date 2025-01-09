@@ -50,13 +50,14 @@ func perr(err error) {
   }
 }
 
-func hertz(hz time.Duration) time.Duration {
-  return time.Second / hz
+func hertz(hz int) time.Duration {
+  return time.Second / time.Duration(hz)
 }
 
-func loop(pace time.Duration, fnc func()) chan bool {
+func loop(rate int, fnc func()) chan bool {
   stopper := make(chan bool)
   cancel  := make(chan bool)
+  pace    := hertz(rate)
 
   go func(cancel chan bool, pace time.Duration, fnc func()) {
     next := time.Now().Add(pace)

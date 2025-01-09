@@ -5,7 +5,6 @@ import (
 
   "os"
   "sync"
-  "time"
 )
 
 type NodeThermalSensor struct {
@@ -32,8 +31,8 @@ func (n *NodeThermalSensor) Name() string {
   return n.ttype + " temp"
 }
 
-func (n *NodeThermalSensor) Rate() time.Duration {
-  return hertz(8)
+func (n *NodeThermalSensor) Rate() int {
+  return 8
 }
 
 func (n *NodeThermalSensor) Unit() string {

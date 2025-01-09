@@ -4,7 +4,6 @@ import (
   "github.com/JoshuaDoes/crunchio"
 
   "sync"
-  "time"
 )
 
 type NodeCPUFreqPolicy struct {
@@ -25,8 +24,8 @@ func (n *NodeCPUFreqPolicy) Name() string {
   return n.policy + " freq"
 }
 
-func (n *NodeCPUFreqPolicy) Rate() time.Duration {
-  return hertz(240)
+func (n *NodeCPUFreqPolicy) Rate() int {
+  return 240
 }
 
 func (n *NodeCPUFreqPolicy) Unit() string {

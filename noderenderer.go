@@ -7,7 +7,6 @@ import (
   "fmt"
   "math"
   "sync"
-  "time"
 )
 
 var (
@@ -18,7 +17,7 @@ type NodeRenderer struct {
   sync.Mutex
   *NodeBase
 
-  hz         time.Duration
+  hz         int
   vrr        bool
   null       *crunchio.Buffer
 
@@ -32,7 +31,7 @@ type NodeRenderer struct {
 func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
   n := new(NodeRenderer)
   n.NodeBase = NewNodeBase()
-  n.hz = hertz(time.Duration(hz))
+  n.hz = hz
   n.vrr = vrr
   n.null = crunchio.NewBuffer(make([]byte, 1))
   n.polls = make([]*NodeRender, 0)
@@ -74,7 +73,7 @@ func (n *NodeRenderer) Name() string {
   return "renderer"
 }
 
-func (n *NodeRenderer) Rate() time.Duration {
+func (n *NodeRenderer) Rate() int {
   return n.hz
 }
 

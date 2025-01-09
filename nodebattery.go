@@ -4,7 +4,6 @@ import (
   "github.com/JoshuaDoes/crunchio"
 
   "sync"
-  "time"
 )
 
 type NodeBattery struct {
@@ -22,8 +21,8 @@ func (n *NodeBattery) Name() string {
   return "battery"
 }
 
-func (n *NodeBattery) Rate() time.Duration {
-  return hertz(2)
+func (n *NodeBattery) Rate() int {
+  return 2
 }
 
 func (n *NodeBattery) Unit() string {

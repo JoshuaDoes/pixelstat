@@ -4,7 +4,6 @@ import (
   "github.com/JoshuaDoes/crunchio"
 
   "sync"
-  "time"
 )
 
 type NodeVoltage struct {
@@ -22,8 +21,8 @@ func (n *NodeVoltage) Name() string {
   return "voltage"
 }
 
-func (n *NodeVoltage) Rate() time.Duration {
-  return hertz(5)
+func (n *NodeVoltage) Rate() int {
+  return 5
 }
 
 func (n *NodeVoltage) Unit() string {

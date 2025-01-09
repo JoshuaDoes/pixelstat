@@ -4,7 +4,6 @@ import (
   "github.com/JoshuaDoes/crunchio"
 
   "sync"
-  "time"
 )
 
 type NodeNetSpeedInterface struct {
@@ -27,8 +26,8 @@ func (n *NodeNetSpeedInterface) Name() string {
   return n.iF + " " + n.typ
 }
 
-func (n *NodeNetSpeedInterface) Rate() time.Duration {
-  return hertz(1)
+func (n *NodeNetSpeedInterface) Rate() int {
+  return 1
 }
 
 func (n *NodeNetSpeedInterface) Unit() string {
