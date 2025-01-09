@@ -35,7 +35,6 @@ func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
   n.vrr = vrr
   n.null = crunchio.NewBuffer(make([]byte, 1))
   n.polls = make([]*NodeRender, 0)
-  terminal = ncurses.Init()
   return n
 }
 
@@ -67,6 +66,10 @@ func (n *NodeRenderer) SetTracker(t *Tracker) {
   n.nameFmt = "%" + fmt.Sprintf("%d", nameLen) + "s"
   n.unitLen = unitLen
   n.Tracker = t
+
+  terminal = ncurses.Init()
+  _, err := ncurses.CursSet(ncurses.CursorOff)
+  perr(err)
 }
 
 func (n *NodeRenderer) Name() string {
