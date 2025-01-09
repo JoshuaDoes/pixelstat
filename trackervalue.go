@@ -3,7 +3,6 @@ package main
 import (
   "github.com/JoshuaDoes/crunchio"
 
-  "fmt"
   "sync"
   "time"
 )
@@ -46,17 +45,6 @@ func (tv *TrackerValue) close() {
 }
 
 func (tv *TrackerValue) getValue() {
-  defer func() {
-    if r := recover(); r != nil {
-      //Catch-all to ignore panics when reading nodes
-      rs := fmt.Sprintf("%v", r)
-      tv.value = crunchio.NewBuffer()
-      tv.value.Grow(int64(len(rs)))
-      tv.value.WriteAbstract(rs)
-      tv.cnt++
-    }
-  }()
-
   tv.Lock()
   defer tv.Unlock()
 

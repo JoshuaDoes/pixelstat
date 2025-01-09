@@ -6,6 +6,7 @@ import (
 
   "fmt"
   "math"
+  "strings"
   "sync"
 )
 
@@ -123,15 +124,40 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
       average += avg + "\n"
     }
   }
+  if now != "" {
+    now = now[:len(now)-1]
+  }
+  if average != "" {
+    average = average[:len(average)-1]
+  }
 
   if terminal == nil {
     return nil
   }
+  h, w := terminal.GetMaxYX()
+
+  fps := math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond())
+  str := fmt.Sprintf("%.0f FPS\n", fps)
+  str += "\nNow:\n" + now
+  str += "\nAverage:\n" + average
+  lines := strings.Split(str, "\n")
+  if len(lines) > h {
+    lines = lines[:h]
+  }
+
   terminal.Erase()
-  rendertv := n.GetTracker().Value(n.Name())
-  terminal.Printf("%.0f FPS\n\n", math.Round(rendertv.PollsPerSecond()))
-  terminal.Printf("Now:\n%s\n", now)
-  terminal.Printf("Average:\n%s\n", average)
+  for i := 0; i < len(lines); i++ {
+    l := lines[i]
+    s := len(l)
+    if s == 0 {
+      terminal.Println("")
+      continue
+    }
+    if s > w {
+      s = w
+    }
+    terminal.Println(l[:s])
+  }
   terminal.Refresh()
 
   return n.null
