@@ -124,8 +124,8 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   if terminal == nil {
     return nil
   }
-  rendertv := n.GetTracker().Value(n.Name())
   terminal.Erase()
+  rendertv := n.GetTracker().Value(n.Name())
   terminal.Printf("%.0f FPS\n\n", math.Round(rendertv.PollsPerSecond()))
   terminal.Printf("Now:\n%s\n", now)
   terminal.Printf("Average:\n%s\n", average)
@@ -191,8 +191,8 @@ func (r *NodeRender) NewFrame() bool {
 func (r *NodeRender) getValue() {
   v := r.tv.Value()
   if v == nil || v.ByteCapacity() == 0 {
-    r.val = ""
-    r.avg = ""
+    r.val = "null"
+    r.avg = "null"
     return
   }
 

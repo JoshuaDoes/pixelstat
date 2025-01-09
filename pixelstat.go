@@ -13,6 +13,7 @@ var (
   refreshRate int  = 1920
   novrr       bool = false
   nothermal   bool = false
+  netbits     bool = false
 )
 
 func main() {
@@ -20,12 +21,13 @@ func main() {
   pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate per renderer")
   pflag.BoolVar(&novrr, "novrr", false, "disable variable refresh rate")
   pflag.BoolVar(&nothermal, "nothermal", false, "disable thermal nodes")
+  pflag.BoolVar(&netbits, "netbits", false, "use bits instead of bytes for netspeed")
   pflag.Parse()
 
   t := NewTracker(
     NewNodeBattery("/sys/class/power_supply/battery/capacity"),
     NewNodeCharging("/sys/class/power_supply/battery/status"),
-    NewNodeNetSpeed("/sys/class/net",
+    NewNodeNetSpeed(netbits, "/sys/class/net",
       "wlan0", "wlan1", "rmnet2"),
     NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
     NewNodeVoltage("/sys/class/power_supply/battery/voltage_now"),
@@ -34,15 +36,13 @@ func main() {
   )
 
   if !nothermal {
-    t.Register(
-      NewNodeThermal("/sys/class/thermal",
-        "LITTLE", "MID", "BIG",
-        "G3D", "TPU", "soc",
-        "gnss_tcxo_therm", "disp_therm",
-        "usb_pwr_therm", "usb_pwr_therm2",
-        "qi_therm", "battery", "batt_vs", "maxfg",
-        "neutral_therm", "quiet_therm"),
-    )
+    t.Register(NewNodeThermal("/sys/class/thermal",
+      "LITTLE", "MID", "BIG",
+      "G3D", "TPU", "soc",
+      "gnss_tcxo_therm", "disp_therm",
+      "usb_pwr_therm", "usb_pwr_therm2",
+      "qi_therm", "battery", "batt_vs", "maxfg",
+      "neutral_therm", "quiet_therm"))
   }
 
   t.Register(NewNodeRenderer(refreshRate, !novrr))

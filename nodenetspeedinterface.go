@@ -3,8 +3,13 @@ package main
 import (
   "github.com/JoshuaDoes/crunchio"
 
+  "fmt"
   "sync"
   "time"
+)
+
+var (
+  units = []string{"K", "M", "G", "T", "P", "Z"}
 )
 
 type NodeNetSpeedInterface struct {
@@ -12,20 +17,24 @@ type NodeNetSpeedInterface struct {
   *NodeFile
 
   iF, typ string
+  bits bool
+
   b int64
-  last time.Time
+  lastUnit string
+  lastPoll time.Time
 }
 
-func NewNodeNetSpeedInterface(iFPath, iF, typ string) *NodeNetSpeedInterface {
+func NewNodeNetSpeedInterface(bits bool, iFPath, iF, typ string) *NodeNetSpeedInterface {
   n := new(NodeNetSpeedInterface)
   n.NodeFile = NewNodeFile(iFPath + "/" + iF + "/statistics/" + typ + "_bytes")
   n.iF = iF
   n.typ = typ
+  n.bits = bits
 
   v := n.NodeFile.Value()
   v.TruncateRight(1) //Remove the newline
   n.b = strtoi64(v.String())
-  n.last = time.Now()
+  n.lastPoll = time.Now()
 
   return n
 }
@@ -35,40 +44,65 @@ func (n *NodeNetSpeedInterface) Name() string {
 }
 
 func (n *NodeNetSpeedInterface) Rate() int {
-  return 1
+  return 4
 }
 
 func (n *NodeNetSpeedInterface) Unit() string {
-  return " KB/s"
+  return n.lastUnit
 }
 
 func (n *NodeNetSpeedInterface) ValueType() string {
-  return "f64"
+  return "str"
 }
 
 func (n *NodeNetSpeedInterface) ValueLen() int64 {
-  return 1
+  return 11 //999.99 PB/s or Pbps
 }
 
 func (n *NodeNetSpeedInterface) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
 
-  v := n.NodeFile.Value()
-  v.TruncateRight(1) //Remove the newline
+  bytes := n.NodeFile.Value()
+  bytes.TruncateRight(1) //Remove the newline
+  b := strtoi64(bytes.String())
 
-  b := strtoi64(v.String())
-  kbps := float64(0)
-  if b > n.b {
-    dur := time.Since(n.last)
-    kbps = (float64(dur) / float64(b - n.b)) / 1000
-    n.b = b
-    n.last = time.Now()
+  str := "0 "
+  if n.bits {
+    str += "bps"
+  } else {
+    str += "B/s"
   }
 
-  v = crunchio.NewBuffer()
-  v.Grow(8)
-  v.WriteAbstract(kbps)
-  v.Seek(0, 0)
-  return v
+  if b > n.b {
+    dur := float64(time.Since(n.lastPoll).Nanoseconds()) / 1000 / 1000 / 1000
+    n.lastPoll = time.Now()
+
+    bytes := b - n.b
+    n.b = b
+    bps, unit := byteUnit(float64(bytes) / dur)
+
+    if n.bits {
+      bps *= 8
+      unit += "bps"
+    } else {
+      unit += "B/s"
+    }
+
+    str = fmt.Sprintf("%.2f %s", bps, unit)
+  }
+
+  return crunchio.NewBuffer([]byte(str))
+}
+
+func byteUnit(bytes float64) (float64, string) {
+  unit := ""
+  for i := 0; i < len(units); i++ {
+    if bytes < 1000 {
+      break
+    }
+    bytes /= 1000
+    unit = units[i]
+  }
+  return bytes, unit
 }

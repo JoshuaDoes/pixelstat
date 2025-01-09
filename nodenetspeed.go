@@ -14,6 +14,7 @@ type NodeNetSpeed struct {
   *NodeBase
   iFPath string
   iFs []string
+  bits bool
 }
 
 func (n *NodeNetSpeed) SetTracker(t *Tracker) {
@@ -50,16 +51,17 @@ func (n *NodeNetSpeed) SetTracker(t *Tracker) {
   }
 
   for i := 0; i < len(iFs); i++ {
-    t.Register(NewNodeNetSpeedInterface(n.iFPath, iFs[i], "rx"))
-    t.Register(NewNodeNetSpeedInterface(n.iFPath, iFs[i], "tx"))
+    t.Register(NewNodeNetSpeedInterface(n.bits, n.iFPath, iFs[i], "rx"))
+    t.Register(NewNodeNetSpeedInterface(n.bits, n.iFPath, iFs[i], "tx"))
   }
 }
 
-func NewNodeNetSpeed(iFPath string, iFs ...string) *NodeNetSpeed {
+func NewNodeNetSpeed(bits bool, iFPath string, iFs ...string) *NodeNetSpeed {
   n := new(NodeNetSpeed)
   n.NodeBase = NewNodeBase()
   n.iFPath = iFPath
   n.iFs = iFs
+  n.bits = bits
   return n
 }
 

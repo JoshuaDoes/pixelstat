@@ -45,6 +45,9 @@ func (n *NodeCPUFreqPolicy) Value() *crunchio.Buffer {
   defer n.Unlock()
 
   v := n.NodeFile.Value()
+  if v == nil || v.ByteCapacity() == 0 {
+    return nil
+  }
   v.TruncateRight(1) //Remove the newline
 
   Hz := strtoi32(v.String())

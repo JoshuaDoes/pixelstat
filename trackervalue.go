@@ -53,6 +53,7 @@ func (tv *TrackerValue) getValue() {
       tv.value = crunchio.NewBuffer()
       tv.value.Grow(int64(len(rs)))
       tv.value.WriteAbstract(rs)
+      tv.cnt++
     }
   }()
 
@@ -146,6 +147,9 @@ func (tv *TrackerValue) Value() *crunchio.Buffer {
 }
 
 func (tv *TrackerValue) Average(index int64) float64 {
+  if tv.cnt <= 0 || len(tv.sum) == 0 {
+    return 0
+  }
   return tv.sum[index] / float64(tv.cnt)
 }
 
