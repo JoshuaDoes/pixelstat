@@ -19,13 +19,15 @@ type NodeRenderer struct {
 
   hz         int
   vrr        bool
-  null       *crunchio.Buffer
+
+  cursor ncurses.CursorVisibility
 
   nameLen    int
   nameFmt    string
   unitLen    int
 
   polls      []*NodeRender
+  null       *crunchio.Buffer
 }
 
 func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
@@ -68,8 +70,9 @@ func (n *NodeRenderer) SetTracker(t *Tracker) {
   n.Tracker = t
 
   terminal = ncurses.Init()
-  _, err := ncurses.CursSet(ncurses.CursorOff)
+  cursor, err := ncurses.CursSet(ncurses.CursorOff)
   perr(err)
+  n.cursor = cursor
 }
 
 func (n *NodeRenderer) Name() string {
@@ -135,6 +138,7 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
 }
 
 func (n *NodeRenderer) Close() error {
+  _, _ = ncurses.CursSet(n.cursor)
   ncurses.EndWin()
   terminal = nil
   return nil
