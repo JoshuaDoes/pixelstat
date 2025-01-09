@@ -8,6 +8,7 @@ import (
   "math"
   "strings"
   "sync"
+  "time"
 )
 
 var (
@@ -18,17 +19,18 @@ type NodeRenderer struct {
   sync.Mutex
   *NodeBase
 
-  hz         int
-  vrr        bool
+  hz  int
+  vrr bool
 
   cursor ncurses.CursorVisibility
 
-  nameLen    int
-  nameFmt    string
-  unitLen    int
+  nameLen int
+  nameFmt string
+  unitLen int
 
-  polls      []*NodeRender
-  null       *crunchio.Buffer
+  start time.Time
+  polls []*NodeRender
+  null  *crunchio.Buffer
 }
 
 func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
@@ -64,16 +66,17 @@ func (n *NodeRenderer) SetTracker(t *Tracker) {
     r.tv = t.Value(node.Name())
     n.polls = append(n.polls, r)
   }
-
   n.nameLen = nameLen
   n.nameFmt = "%" + fmt.Sprintf("%d", nameLen) + "s"
   n.unitLen = unitLen
-  n.Tracker = t
 
   terminal = ncurses.Init()
   cursor, err := ncurses.CursSet(ncurses.CursorOff)
   perr(err)
   n.cursor = cursor
+
+  n.start = time.Now()
+  n.Tracker = t
 }
 
 func (n *NodeRenderer) Name() string {
@@ -137,7 +140,9 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   h, w := terminal.GetMaxYX()
 
   fps := math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond())
+  run := time.Since(n.start).Truncate(time.Millisecond)
   str := fmt.Sprintf("%.0f FPS", fps)
+  str += "\n" + run.String()
   str += "\n\nNow:\n" + now
   str += "\n\nAverage:\n" + average
   lines := strings.Split(str, "\n")

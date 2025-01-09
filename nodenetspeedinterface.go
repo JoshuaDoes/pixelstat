@@ -71,9 +71,12 @@ func (n *NodeNetSpeedInterface) Value() *crunchio.Buffer {
 
   str := n.null
 
-  bytes := n.NodeFile.Value()
-  bytes.TruncateRight(1) //Remove the newline
-  b := strtoi64(bytes.String())
+  v := n.NodeFile.Value()
+  if v == nil || v.ByteCapacity() == 0 {
+    return nil
+  }
+  v.TruncateRight(1) //Remove the newline
+  b := strtoi64(v.String())
 
   if b > n.b {
     dur := float64(time.Since(n.lastPoll).Nanoseconds()) / 1000 / 1000 / 1000

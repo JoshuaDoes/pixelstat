@@ -52,6 +52,9 @@ func (n *NodeThermalSensor) Value() *crunchio.Buffer {
   defer n.Unlock()
 
   v := n.NodeFile.Value()
+  if v == nil || v.ByteCapacity() == 0 {
+    return nil
+  }
   v.TruncateRight(1) //Remove the newline
 
   temp := strtof64(v.String()) / 1000
