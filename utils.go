@@ -60,11 +60,10 @@ func loop(rate int, fnc func()) chan bool {
   pace    := hertz(rate)
 
   go func(cancel chan bool, pace time.Duration, fnc func()) {
+    fnc()
     next := time.Now().Add(pace)
 
     for {
-      fnc()
-
       select {
       case <- cancel:
         close(cancel)
@@ -75,6 +74,8 @@ func loop(rate int, fnc func()) chan bool {
 
       next = next.Add(pace)
       time.Sleep(time.Until(next))
+
+      fnc()
     }
   }(cancel, pace, fnc)
 

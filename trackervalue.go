@@ -3,6 +3,7 @@ package main
 import (
   "github.com/JoshuaDoes/crunchio"
 
+  "fmt"
   "sync"
   "time"
 )
@@ -48,6 +49,10 @@ func (tv *TrackerValue) getValue() {
   defer func() {
     if r := recover(); r != nil {
       //Catch-all to ignore panics when reading nodes
+      rs := fmt.Sprintf("%v", r)
+      tv.value = crunchio.NewBuffer()
+      tv.value.Grow(int64(len(rs)))
+      tv.value.WriteAbstract(rs)
     }
   }()
 
@@ -61,50 +66,6 @@ func (tv *TrackerValue) getValue() {
   n := tv.node
   v := n.Value()
   if v != nil && v.ByteCapacity() > 0 {
-    switch tv.node.ValueType() {
-    case "i32":
-      length := n.ValueLen()
-      if bc := v.ByteCapacity(); (bc / 4) < length {
-        length = (bc / 4)
-      }
-      i32s := v.ReadI32LENext(length)
-      tv.expandSum(len(i32s))
-      for i := 0; i < len(i32s); i++ {
-        tv.sum[i] += float64(i32s[i])
-      }
-    case "i64":
-      length := n.ValueLen()
-      if bc := v.ByteCapacity(); (bc / 8) < length {
-        length = (bc / 8)
-      }
-      i64s := v.ReadI64LENext(length)
-      tv.expandSum(len(i64s))
-      for i := 0; i < len(i64s); i++ {
-        tv.sum[i] += float64(i64s[i])
-      }
-    case "f32":
-      length := n.ValueLen()
-      if bc := v.ByteCapacity(); (bc / 4) < length {
-        length = (bc / 4)
-      }
-      f32s := v.ReadF32LENext(length)
-      tv.expandSum(len(f32s))
-      for i := 0; i < len(f32s); i++ {
-        tv.sum[i] += float64(f32s[i])
-      }
-    case "f64":
-      length := n.ValueLen()
-      if bc := v.ByteCapacity(); (bc / 8) < length {
-        length = (bc / 8)
-      }
-      f64s := v.ReadF64LENext(length)
-      tv.expandSum(len(f64s))
-      for i := 0; i < len(f64s); i++ {
-        tv.sum[i] += f64s[i]
-      }
-    }
-
-    v.Seek(0, 0)
     tv.value = v
     tv.cnt++
 
@@ -120,6 +81,54 @@ func (tv *TrackerValue) getValue() {
         tv.pps = 0
       }
     }(tv)
+
+    go func(v *crunchio.Buffer, tv *TrackerValue) {
+      tv.Lock()
+      defer tv.Unlock()
+
+      switch tv.node.ValueType() {
+      case "i32":
+        length := n.ValueLen()
+        if bc := v.ByteCapacity(); (bc / 4) < length {
+          length = (bc / 4)
+        }
+        i32s := v.ReadI32LENext(length)
+        tv.expandSum(len(i32s))
+        for i := 0; i < len(i32s); i++ {
+          tv.sum[i] += float64(i32s[i])
+        }
+      case "i64":
+        length := n.ValueLen()
+        if bc := v.ByteCapacity(); (bc / 8) < length {
+          length = (bc / 8)
+        }
+        i64s := v.ReadI64LENext(length)
+        tv.expandSum(len(i64s))
+        for i := 0; i < len(i64s); i++ {
+          tv.sum[i] += float64(i64s[i])
+        }
+      case "f32":
+        length := n.ValueLen()
+        if bc := v.ByteCapacity(); (bc / 4) < length {
+          length = (bc / 4)
+        }
+        f32s := v.ReadF32LENext(length)
+        tv.expandSum(len(f32s))
+        for i := 0; i < len(f32s); i++ {
+          tv.sum[i] += float64(f32s[i])
+        }
+      case "f64":
+        length := n.ValueLen()
+        if bc := v.ByteCapacity(); (bc / 8) < length {
+          length = (bc / 8)
+        }
+        f64s := v.ReadF64LENext(length)
+        tv.expandSum(len(f64s))
+        for i := 0; i < len(f64s); i++ {
+          tv.sum[i] += f64s[i]
+        }
+      }
+    }(crunchio.NewBuffer(v.Bytes()), tv)
   }
 }
 
