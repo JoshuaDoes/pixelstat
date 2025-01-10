@@ -34,7 +34,7 @@ func (n *NodeCharging) ValueType() string {
 }
 
 func (n *NodeCharging) ValueLen() int64 {
-  return 11
+  return 12
 }
 func (n *NodeCharging) Value() *crunchio.Buffer {
   n.Lock()
