@@ -30,6 +30,7 @@ func main() {
     NewNodeNetSpeed(netbits, "/sys/class/net",
       "wlan0", "wlan1", "rmnet2"),
     NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
+    NewNodeCPUSet("/dev/cpuset"),
     NewNodeVoltage("/sys/class/power_supply/battery/voltage_now"),
     NewNodeCurrent("/sys/class/power_supply/battery/current_now"),
     NewNodeWattage(),
