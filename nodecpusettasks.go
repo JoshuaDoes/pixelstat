@@ -33,7 +33,7 @@ func (n *NodeCPUSetTasks) Name() string {
 }
 
 func (n *NodeCPUSetTasks) Rate() int {
-  return 240
+  return 4
 }
 
 func (n *NodeCPUSetTasks) Unit() string {
