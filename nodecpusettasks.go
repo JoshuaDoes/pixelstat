@@ -22,6 +22,9 @@ func NewNodeCPUSetTasks(setsPath, set string) *NodeCPUSetTasks {
   n.NodeFile = NewNodeFile(setsPath + "/" + set + "/tasks")
   n.cpus = NewNodeFile(setsPath + "/" + set + "/cpus")
   n.set = set
+
+  n.setCpus()
+
   return n
 }
 
@@ -49,14 +52,7 @@ func (n *NodeCPUSetTasks) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
 
-  cpus := n.cpus.Value()
-  if cpus.ByteCapacity() > 0 {
-    cpus.TruncateRight(1) //Remove the newline
-  } else {
-    cpus.Grow(1)
-    cpus.WriteAbstract("?")
-  }
-  n.cores = cpus.String()
+  n.setCpus()
 
   v := n.NodeFile.Value()
   if v == nil || v.ByteCapacity() == 0 {
@@ -74,4 +70,15 @@ func (n *NodeCPUSetTasks) Value() *crunchio.Buffer {
   v.WriteAbstract(int32(total))
   v.Seek(0, 0)
   return v
+}
+
+func (n *NodeCPUSetTasks) setCpus() {
+  cpus := n.cpus.Value()
+  if cpus.ByteCapacity() > 0 {
+    cpus.TruncateRight(1) //Remove the newline
+  } else {
+    cpus.Grow(1)
+    cpus.WriteAbstract("?")
+  }
+  n.cores = cpus.String()
 }
