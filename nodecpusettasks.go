@@ -14,6 +14,7 @@ type NodeCPUSetTasks struct {
   cpus *NodeFile
 
   set string
+  cores string
 }
 
 func NewNodeCPUSetTasks(setsPath, set string) *NodeCPUSetTasks {
@@ -25,14 +26,7 @@ func NewNodeCPUSetTasks(setsPath, set string) *NodeCPUSetTasks {
 }
 
 func (n *NodeCPUSetTasks) Name() string {
-  cpus := n.cpus.Value()
-  if cpus.ByteCapacity() > 0 {
-    cpus.TruncateRight(1) //Remove the newline
-  } else {
-    cpus.Grow(1)
-    cpus.WriteAbstract("?")
-  }
-  return fmt.Sprintf("%s (%s)", n.set, cpus)
+  return fmt.Sprintf("%s (%s)", n.set, n.cores)
 }
 
 func (n *NodeCPUSetTasks) Rate() int {
@@ -54,6 +48,15 @@ func (n *NodeCPUSetTasks) ValueLen() int64 {
 func (n *NodeCPUSetTasks) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
+
+  cpus := n.cpus.Value()
+  if cpus.ByteCapacity() > 0 {
+    cpus.TruncateRight(1) //Remove the newline
+  } else {
+    cpus.Grow(1)
+    cpus.WriteAbstract("?")
+  }
+  n.cores = cpus.String()
 
   v := n.NodeFile.Value()
   if v == nil || v.ByteCapacity() == 0 {

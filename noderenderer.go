@@ -206,10 +206,13 @@ func (r *NodeRender) Poll() {
 
   n := r.node
   old := r.polls
-  r.polls = r.p.GetTracker().Value(n.Name()).Polls()
-  if r.polls > old {
-    r.getValue()
-    r.newF = true
+  tv := r.p.GetTracker().Value(n.Name())
+  if tv != nil {
+    r.polls = tv.Polls()
+    if r.polls > old {
+      r.getValue()
+      r.newF = true
+    }
   }
   r.poll = false
 }
