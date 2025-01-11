@@ -97,8 +97,10 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   if terminal == nil {
     return nil
   }
-  pollers := n.Pollers()
 
+  startFrame := time.Now()
+
+  pollers := n.Pollers()
   for i := 0; i < pollers; i++ {
     n.GetRender(i).Poll()
   }
@@ -134,15 +136,17 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
     average = average[:len(average)-1]
   }
 
+  fps := math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond())
+  runtime := time.Since(n.start).Truncate(time.Millisecond)
+  frametime := time.Since(startFrame)
+
   if terminal == nil {
     return nil
   }
   h, w := terminal.GetMaxYX()
 
-  fps := math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond())
-  run := time.Since(n.start).Truncate(time.Millisecond)
-  str := fmt.Sprintf("%.0f FPS", fps)
-  str += "\n" + run.String()
+  str := fmt.Sprintf("%.0f FPS (%s)\n%s",
+    fps, frametime, runtime)
   str += "\n\nNow:\n" + now
   str += "\n\nAverage:\n" + average
   lines := strings.Split(str, "\n")

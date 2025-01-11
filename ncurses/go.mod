@@ -1,4 +1,4 @@
-module seehuhn.de/go/ncurses
+module github.com/JoshuaDoes/go-ncurses
 
 go 1.16
 
