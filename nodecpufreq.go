@@ -1,13 +1,7 @@
 package main
 
 import (
-  "fmt"
   "os"
-)
-
-var (
-  errCPUFreqPolicies     = fmt.Errorf("cpufreq: no policies were found")
-  errCPUFreqPolicyNotDir = fmt.Errorf("cpufreq: policy path contains files")
 )
 
 type NodeCPUFreq struct {
@@ -24,17 +18,19 @@ func (n *NodeCPUFreq) SetTracker(t *Tracker) {
   policies := make([]string, 0)
   for _, file := range dir {
     if !file.IsDir() {
-      perr(errCPUFreqPolicyNotDir)
+      continue
     }
     policy := file.Name()
     freqFile, err := os.Open(n.policyPath + "/" + policy + "/cpuinfo_cur_freq")
-    perr(err)
+    if err != nil {
+      continue
+    }
     freqFile.Close()
     policies = append(policies, policy)
   }
 
   if len(policies) == 0 {
-    perr(errCPUFreqPolicies)
+    return
   }
 
   for i := 0; i < len(policies); i++ {

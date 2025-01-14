@@ -39,8 +39,10 @@ func (tv *TrackerValue) start(maxHz int) {
 }
 
 func (tv *TrackerValue) close() {
-  tv.stopper <- true
-  tv.stopper = nil
+  go func() {
+    tv.stopper <- true
+  }()
+  time.Sleep(time.Second)
   perr(tv.node.Close())
 }
 

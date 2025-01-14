@@ -105,28 +105,28 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
     n.GetRender(i).Poll()
   }
 
+  newFrame := true
   if n.vrr {
-    newFrame := false
+    newFrame = false
     for i := 0; i < pollers; i++ {
       if n.GetRender(i).NewFrame() {
         newFrame = true
         break
       }
     }
-    if !newFrame {
-      return nil
-    }
   }
 
   now := ""
   average := ""
-  for i := 0; i < pollers; i++ {
-    p := n.GetRender(i)
-    if val := p.val; val != "" {
-      now += val + "\n"
-    }
-    if avg := p.avg; avg != "" {
-      average += avg + "\n"
+  if newFrame {
+    for i := 0; i < pollers; i++ {
+      p := n.GetRender(i)
+      if val := p.val; val != "" {
+        now += val + "\n"
+      }
+      if avg := p.avg; avg != "" {
+        average += avg + "\n"
+      }
     }
   }
   if now != "" {
