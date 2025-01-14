@@ -52,12 +52,11 @@ func main() {
 
   t.Register(NewNodeRenderer(refreshRate, !novrr))
   t.Start(pollingRate)
+  defer t.Close()
 
   sig := make(chan os.Signal, 1)
   signal.Notify(sig, syscall.SIGINT)  //Keyboard interrupt
   signal.Notify(sig, syscall.SIGHUP)  //Terminal disappeared
   signal.Notify(sig, syscall.SIGKILL) //Process abandoned by kernel, how are we here???
   <-sig
-
-  t.Close()
 }

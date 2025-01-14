@@ -53,5 +53,8 @@ func (n *NodeFile) Value() *crunchio.Buffer {
 }
 
 func (n *NodeFile) Close() error {
-  return n.File.Close()
+  if n.File != nil {
+    return n.File.Close()
+  }
+  return nil
 }
