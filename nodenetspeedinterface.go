@@ -23,9 +23,13 @@ type NodeNetSpeedInterface struct {
   lastPoll time.Time
 }
 
-func NewNodeNetSpeedInterface(bits bool, iFPath, iF, typ string) *NodeNetSpeedInterface {
+func NewNodeNetSpeedInterface(bits bool, iFPath, iF, typ string) (*NodeNetSpeedInterface, error) {
   n := new(NodeNetSpeedInterface)
-  n.NodeFile = NewNodeFile(iFPath + "/" + iF + "/statistics/" + typ + "_bytes")
+  nf, err := NewNodeFile(iFPath + "/" + iF + "/statistics/" + typ + "_bytes")
+  if err != nil {
+    return nil, err
+  }
+  n.NodeFile = nf
   n.iF = iF
   n.typ = typ
   n.bits = bits
@@ -42,7 +46,7 @@ func NewNodeNetSpeedInterface(bits bool, iFPath, iF, typ string) *NodeNetSpeedIn
     n.null += "B/s"
   }
 
-  return n
+  return n, nil
 }
 
 func (n *NodeNetSpeedInterface) Name() string {

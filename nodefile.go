@@ -13,14 +13,16 @@ type NodeFile struct {
   File *os.File
 }
 
-func NewNodeFile(path string) *NodeFile {
+func NewNodeFile(path string) (*NodeFile, error) {
   f, err := os.Open(path)
-  perr(err)
+  if err != nil {
+    return nil, err
+  }
 
   n := new(NodeFile)
   n.NodeBase = NewNodeBase()
   n.File = f
-  return n
+  return n, nil
 }
 
 func (n *NodeFile) Name() string {

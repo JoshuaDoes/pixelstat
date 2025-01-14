@@ -22,11 +22,11 @@ type NodeWattage struct {
 func (n *NodeWattage) SetTracker(t *Tracker) {
   cn := t.Node("current")
   if cn == nil {
-    perr(errWattageNeedCurrent)
+    return
   }
   vn := t.Node("voltage")
   if vn == nil {
-    perr(errWattageNeedVoltage)
+    return
   }
   n.rate = cn.Rate() + vn.Rate()
   n.Tracker = t

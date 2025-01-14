@@ -11,10 +11,11 @@ type NodeCharging struct {
   *NodeFile
 }
 
-func NewNodeCharging(path string) *NodeCharging {
+func NewNodeCharging(path string) (*NodeCharging, error) {
   n := new(NodeCharging)
-  n.NodeFile = NewNodeFile(path)
-  return n
+  nf, err := NewNodeFile(path)
+  n.NodeFile = nf
+  return n, err
 }
 
 func (n *NodeCharging) Name() string {

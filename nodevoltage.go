@@ -11,10 +11,11 @@ type NodeVoltage struct {
   *NodeFile
 }
 
-func NewNodeVoltage(path string) *NodeVoltage {
+func NewNodeVoltage(path string) (*NodeVoltage, error) {
   n := new(NodeVoltage)
-  n.NodeFile = NewNodeFile(path)
-  return n
+  nf, err := NewNodeFile(path)
+  n.NodeFile = nf
+  return n, err
 }
 
 func (n *NodeVoltage) Name() string {

@@ -19,7 +19,9 @@ type NodeNetSpeed struct {
 
 func (n *NodeNetSpeed) SetTracker(t *Tracker) {
   dir, err := os.ReadDir(n.iFPath)
-  perr(err)
+  if err != nil {
+    return
+  }
 
   iFs := make([]string, 0)
   for i := 0; i < len(dir); i++ {
@@ -51,8 +53,14 @@ func (n *NodeNetSpeed) SetTracker(t *Tracker) {
   }
 
   for i := 0; i < len(iFs); i++ {
-    t.Register(NewNodeNetSpeedInterface(n.bits, n.iFPath, iFs[i], "rx"))
-    t.Register(NewNodeNetSpeedInterface(n.bits, n.iFPath, iFs[i], "tx"))
+    node, err := NewNodeNetSpeedInterface(n.bits, n.iFPath, iFs[i], "rx")
+    if err == nil {
+      t.Register(node)
+    }
+    node, err = NewNodeNetSpeedInterface(n.bits, n.iFPath, iFs[i], "tx")
+    if err == nil {
+      t.Register(node)
+    }
   }
 }
 

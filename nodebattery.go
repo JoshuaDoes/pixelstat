@@ -11,10 +11,11 @@ type NodeBattery struct {
   *NodeFile
 }
 
-func NewNodeBattery(path string) *NodeBattery {
+func NewNodeBattery(path string) (*NodeBattery, error) {
   n := new(NodeBattery)
-  n.NodeFile = NewNodeFile(path)
-  return n
+  nf, err := NewNodeFile(path)
+  n.NodeFile = nf
+  return n, err
 }
 
 func (n *NodeBattery) Name() string {

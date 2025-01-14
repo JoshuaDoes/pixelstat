@@ -13,11 +13,12 @@ type NodeCPUFreqPolicy struct {
   policy string
 }
 
-func NewNodeCPUFreqPolicy(policyPath, policy string) *NodeCPUFreqPolicy {
+func NewNodeCPUFreqPolicy(policyPath, policy string) (*NodeCPUFreqPolicy, error) {
   n := new(NodeCPUFreqPolicy)
   n.policy = policy
-  n.NodeFile = NewNodeFile(policyPath + "/" + policy + "/cpuinfo_cur_freq")
-  return n
+  nf, err := NewNodeFile(policyPath + "/" + policy + "/cpuinfo_cur_freq")
+  n.NodeFile = nf
+  return n, err
 }
 
 func (n *NodeCPUFreqPolicy) Name() string {

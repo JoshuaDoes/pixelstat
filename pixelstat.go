@@ -24,17 +24,21 @@ func main() {
   pflag.BoolVar(&netbits, "netbits", false, "use bits instead of bytes for netspeed")
   pflag.Parse()
 
-  t := NewTracker(
-    NewNodeBattery("/sys/class/power_supply/battery/capacity"),
-    NewNodeCharging("/sys/class/power_supply/battery/status"),
-    NewNodeNetSpeed(netbits, "/sys/class/net",
-      "wlan0", "wlan1", "rmnet2"),
-    NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"),
-    NewNodeCPUSet("/dev/cpuset"),
-    NewNodeVoltage("/sys/class/power_supply/battery/voltage_now"),
-    NewNodeCurrent("/sys/class/power_supply/battery/current_now"),
-    NewNodeWattage(),
-  )
+  t := NewTracker()
+
+  battery, err := NewNodeBattery("/sys/class/power_supply/battery/capacity")
+  if err == nil { t.Register(battery) }
+  charging, err := NewNodeCharging("/sys/class/power_supply/battery/status")
+  if err == nil { t.Register(charging) }
+  t.Register(NewNodeNetSpeed(netbits, "/sys/class/net",
+    "wlan0", "wlan1", "rmnet2"))
+  t.Register(NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"))
+  t.Register(NewNodeCPUSet("/dev/cpuset"))
+  voltage, err := NewNodeVoltage("/sys/class/power_supply/battery/voltage_now")
+  if err == nil { t.Register(voltage) }
+  current, err := NewNodeCurrent("/sys/class/power_supply/battery/current_now")
+  if err == nil { t.Register(current) }
+  t.Register(NewNodeWattage())
 
   if !nothermal {
     t.Register(NewNodeThermal("/sys/class/thermal",

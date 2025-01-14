@@ -11,10 +11,11 @@ type NodeCurrent struct {
   *NodeFile
 }
 
-func NewNodeCurrent(path string) *NodeCurrent {
+func NewNodeCurrent(path string) (*NodeCurrent, error) {
   n := new(NodeCurrent)
-  n.NodeFile = NewNodeFile(path)
-  return n
+  nf, err := NewNodeFile(path)
+  n.NodeFile = nf
+  return n, err
 }
 
 func (n *NodeCurrent) Name() string {

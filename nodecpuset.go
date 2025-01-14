@@ -11,7 +11,9 @@ type NodeCPUSet struct {
 
 func (n *NodeCPUSet) SetTracker(t *Tracker) {
   dir, err := os.ReadDir(n.setsPath)
-  perr(err)
+  if err != nil {
+    return
+  }
 
   sets := make([]string, 0)
   for i := 0; i < len(dir); i++ {
@@ -33,7 +35,10 @@ func (n *NodeCPUSet) SetTracker(t *Tracker) {
   }
 
   for i := 0; i < len(sets); i++ {
-    t.Register(NewNodeCPUSetTasks(n.setsPath, sets[i]))
+    node, err := NewNodeCPUSetTasks(n.setsPath, sets[i])
+    if err == nil {
+      t.Register(node)
+    }
   }
 }
 

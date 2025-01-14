@@ -19,7 +19,9 @@ type NodeThermal struct {
 
 func (n *NodeThermal) SetTracker(t *Tracker) {
   dir, err := os.ReadDir(n.thermalPath)
-  perr(err)
+  if err != nil {
+    return
+  }
 
   sensors := make([]string, 0)
   for i := 0; i < len(dir); i++ {
@@ -53,7 +55,10 @@ func (n *NodeThermal) SetTracker(t *Tracker) {
   }
 
   for i := 0; i < len(sensors); i++ {
-    t.Register(NewNodeThermalSensor(n.thermalPath, sensors[i]))
+    node, err := NewNodeThermalSensor(n.thermalPath, sensors[i])
+    if err == nil {
+      t.Register(node)
+    }
   }
 }
 

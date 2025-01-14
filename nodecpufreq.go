@@ -17,7 +17,9 @@ type NodeCPUFreq struct {
 
 func (n *NodeCPUFreq) SetTracker(t *Tracker) {
   dir, err := os.ReadDir(n.policyPath)
-  perr(err)
+  if err != nil {
+    return
+  }
 
   policies := make([]string, 0)
   for _, file := range dir {
@@ -36,7 +38,10 @@ func (n *NodeCPUFreq) SetTracker(t *Tracker) {
   }
 
   for i := 0; i < len(policies); i++ {
-    t.Register(NewNodeCPUFreqPolicy(n.policyPath, policies[i]))
+    node, err := NewNodeCPUFreqPolicy(n.policyPath, policies[i])
+    if err == nil {
+      t.Register(node)
+    }
   }
 }
 

@@ -15,16 +15,19 @@ type NodeThermalSensor struct {
   ttype  string
 }
 
-func NewNodeThermalSensor(thermalPath, sensor string) *NodeThermalSensor {
+func NewNodeThermalSensor(thermalPath, sensor string) (*NodeThermalSensor, error) {
   data, err := os.ReadFile(thermalPath + "/" + sensor + "/type")
-  perr(err)
+  if err != nil {
+    return nil, err
+  }
   ttype := string(data[:len(data)-1])
 
   n := new(NodeThermalSensor)
   n.sensor = sensor
   n.ttype = ttype
-  n.NodeFile = NewNodeFile(thermalPath + "/" + sensor + "/temp")
-  return n
+  nf, err := NewNodeFile(thermalPath + "/" + sensor + "/temp")
+  n.NodeFile = nf
+  return n, err
 }
 
 func (n *NodeThermalSensor) Name() string {

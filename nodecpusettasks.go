@@ -17,15 +17,23 @@ type NodeCPUSetTasks struct {
   cores string
 }
 
-func NewNodeCPUSetTasks(setsPath, set string) *NodeCPUSetTasks {
+func NewNodeCPUSetTasks(setsPath, set string) (*NodeCPUSetTasks, error) {
   n := new(NodeCPUSetTasks)
-  n.NodeFile = NewNodeFile(setsPath + "/" + set + "/tasks")
-  n.cpus = NewNodeFile(setsPath + "/" + set + "/cpus")
+  nf, err := NewNodeFile(setsPath + "/" + set + "/tasks")
+  if err != nil {
+    return nil, err
+  }
+  n.NodeFile = nf
+  nfc, err := NewNodeFile(setsPath + "/" + set + "/cpus")
+  if err != nil {
+    return nil, err
+  }
+  n.cpus = nfc
   n.set = set
 
   n.setCpus()
 
-  return n
+  return n, nil
 }
 
 func (n *NodeCPUSetTasks) Name() string {
