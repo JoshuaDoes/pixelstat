@@ -25,10 +25,14 @@ func (n *NodeCPUSet) SetTracker(t *Tracker) {
     set := file.Name()
 
     cpusFile, err := os.Open(n.setsPath + "/" + set + "/cpus")
-    perr(err)
+    if err != nil {
+      continue
+    }
     cpusFile.Close()
     tasksFile, err := os.Open(n.setsPath + "/" + set + "/tasks")
-    perr(err)
+    if err != nil {
+      continue
+    }
     tasksFile.Close()
 
     sets = append(sets, set)
