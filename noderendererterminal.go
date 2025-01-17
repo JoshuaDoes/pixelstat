@@ -1,18 +1,14 @@
+// +build terminal
+
 package main
 
 import (
   "github.com/JoshuaDoes/crunchio"
-  "seehuhn.de/go/ncurses"
 
   "fmt"
   "math"
-  "strings"
   "sync"
   "time"
-)
-
-var (
-  terminal *ncurses.Window
 )
 
 type NodeRenderer struct {
@@ -21,8 +17,6 @@ type NodeRenderer struct {
 
   hz  int
   vrr bool
-
-  cursor ncurses.CursorVisibility
 
   nameLen int
   nameFmt string
@@ -70,11 +64,6 @@ func (n *NodeRenderer) SetTracker(t *Tracker) {
   n.nameFmt = "%" + fmt.Sprintf("%d", nameLen) + "s"
   n.unitLen = unitLen
 
-  terminal = ncurses.Init()
-  cursor, err := ncurses.CursSet(ncurses.CursorOff)
-  perr(err)
-  n.cursor = cursor
-
   n.start = time.Now()
   n.Tracker = t
 }
@@ -94,9 +83,6 @@ func (n *NodeRenderer) ValueLen() int64 {
 func (n *NodeRenderer) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
-  if terminal == nil {
-    return nil
-  }
 
   startFrame := time.Now()
 
@@ -140,42 +126,16 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   runtime := time.Since(n.start).Truncate(time.Millisecond)
   frametime := time.Since(startFrame)
 
-  if terminal == nil {
-    return nil
-  }
-  h, w := terminal.GetMaxYX()
-
   str := fmt.Sprintf("%.0f FPS (%s)\n%s",
     fps, frametime, runtime)
   str += "\n\nNow:\n" + now
   str += "\n\nAverage:\n" + average
-  lines := strings.Split(str, "\n")
-  if len(lines) > h {
-    lines = lines[:h]
-  }
-
-  terminal.Erase()
-  for i := 0; i < len(lines); i++ {
-    l := lines[i]
-    s := len(l)
-    if s == 0 {
-      terminal.Println("")
-      continue
-    }
-    if s > w {
-      s = w
-    }
-    terminal.Println(l[:s])
-  }
-  terminal.Refresh()
+  fmt.Println("\033[H\033[2J" + str)
 
   return n.null
 }
 
 func (n *NodeRenderer) Close() error {
-  _, _ = ncurses.CursSet(n.cursor)
-  ncurses.EndWin()
-  terminal = nil
   return nil
 }
 
