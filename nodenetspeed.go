@@ -27,7 +27,7 @@ func (n *NodeNetSpeed) SetTracker(t *Tracker) {
   for i := 0; i < len(dir); i++ {
     file := dir[i]
     if file.Type() != fs.ModeSymlink {
-      perr(errNetNotSymlink)
+      continue
     }
 
     iF := file.Name()
@@ -43,10 +43,14 @@ func (n *NodeNetSpeed) SetTracker(t *Tracker) {
     }
 
     rxFile, err := os.Open(n.iFPath + "/" + iF + "/statistics/rx_bytes")
-    perr(err)
+    if err != nil {
+      continue
+    }
     rxFile.Close()
     txFile, err := os.Open(n.iFPath + "/" + iF + "/statistics/tx_bytes")
-    perr(err)
+    if err != nil {
+      continue
+    }
     txFile.Close()
 
     iFs = append(iFs, iF)
