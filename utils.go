@@ -3,7 +3,6 @@ package main
 import (
   "fmt"
   "os"
-  "runtime"
   "strconv"
   "time"
 )
@@ -61,34 +60,36 @@ func loop(rate int, fnc func()) chan bool {
   stopper := make(chan bool)
   cancel  := make(chan bool)
 
-  go func(stopper, cancel chan bool) {
-    stop := <- stopper
-    cancel <- stop
-  }(stopper, cancel)
-
-  go func(cancel chan bool, rate int, fnc func()) {
-    pace  := hertz(rate)
-
-    start := time.Now()
-    for {
-      go fnc()
-      runtime.Gosched()
-
-      remain := pace - time.Since(start)
-      if remain > 0 {
-        time.Sleep(remain)
-      }
-      start = start.Add(pace)
-
-      select {
-      case <- cancel:
-        close(cancel)
-        return
-      default:
-        //pass
-      }
-    }
-  }(cancel, rate, fnc)
+  go loopSignal(stopper, cancel)
+  go loopRunner(cancel, rate, fnc)
 
   return stopper
+}
+
+func loopSignal(stopper, cancel chan bool) {
+  defer recovery()
+  stop := <- stopper
+  cancel <- stop
+}
+
+func loopRunner(cancel chan bool, rate int, fnc func()) {
+  defer recovery()
+  pace := hertz(rate)
+
+  //It's expected for timeStart to fall behind if pacing is too fast,
+  //could be exposed later on to report how far behind it falls.
+  timeStart := time.Now()
+  for {
+    fnc()
+    time.Sleep(pace - time.Since(timeStart))
+    timeStart = timeStart.Add(pace)
+
+    select {
+    case <- cancel:
+      close(cancel)
+      return
+    default:
+      //pass
+    }
+  }
 }

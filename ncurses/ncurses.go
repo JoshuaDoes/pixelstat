@@ -190,7 +190,7 @@ func (w *Window) GetYX() (int, int) {
 	global.Lock()
 	defer global.Unlock()
 	if !global.isInitialized {
-		return
+		return -1, -1
 	}
 	x := C.getcurx(w.ptr)
 	y := C.getcury(w.ptr)
@@ -204,7 +204,7 @@ func (w *Window) GetBegYX() (int, int) {
 	global.Lock()
 	defer global.Unlock()
 	if !global.isInitialized {
-		return
+		return -1, -1
 	}
 	x := C.getbegx(w.ptr)
 	y := C.getbegy(w.ptr)
@@ -216,7 +216,7 @@ func (w *Window) GetMaxYX() (int, int) {
 	global.Lock()
 	defer global.Unlock()
 	if !global.isInitialized {
-		return
+		return -1, -1
 	}
 	x := C.getmaxx(w.ptr)
 	y := C.getmaxy(w.ptr)
