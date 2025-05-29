@@ -22,6 +22,8 @@ type TrackerValue struct {
 }
 
 func (tv *TrackerValue) start(maxHz int) {
+  defer recovery()
+
   if tv.stopper != nil {
     return
   }

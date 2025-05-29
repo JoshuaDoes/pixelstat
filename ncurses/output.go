@@ -32,6 +32,11 @@ import "C"
 // Note that methods waiting for keyboard input call Refresh() before
 // waiting for input.
 func (w *Window) Refresh() {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	C.wrefresh(w.ptr)
 }
 
@@ -39,6 +44,11 @@ func (w *Window) Refresh() {
 // the window.  The blanks created by Erase() have the current
 // background rendition, as set by SetBackground(), merged into them.
 func (w *Window) Erase() {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	C.werase(w.ptr)
 }
 
@@ -46,12 +56,18 @@ func (w *Window) Erase() {
 // functions all lines below the cursor in the window.  Also, the
 // current line to the right of the cursor, inclusive, is erased.
 func (w *Window) ClrToBot() {
+	if !global.isInitialized {
+		return
+	}
 	C.wclrtobot(w.ptr)
 }
 
 // ClrToEol erases the current line to the right of the cursor,
 // inclusive, to the end of the current line.
 func (w *Window) ClrToEol() {
+	if !global.isInitialized {
+		return
+	}
 	C.wclrtoeol(w.ptr)
 }
 
@@ -59,19 +75,45 @@ func (w *Window) ClrToEol() {
 // arguments indicate the row y and column x of the new cursor
 // position.
 func (w *Window) Move(y, x int) {
+	if !global.isInitialized {
+		return
+	}
 	C.wmove(w.ptr, C.int(y), C.int(x))
 }
 
 // AddStr prints a string to the window at the current cursor
 // position.
 func (w *Window) AddStr(s string) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	buf := stringToC(s)
 	C.waddwstr(w.ptr, &buf[0])
+}
+
+// SetStr sets the total window contents to the given string
+// and performs a refresh.
+func (w *Window) SetStr(s string) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
+	buf := stringToC(s)
+	C.werase(w.ptr) // Clear the window first
+	C.wmove(w.ptr, 0, 0) // Move to the top-left corner
+	C.waddwstr(w.ptr, &buf[0]) // Add the string to the window
+	C.wrefresh(w.ptr) // Refresh to show the changes
 }
 
 // MvAddStr moves the cursor to row y, column x, and then prints a
 // string to the window at the new cursor position.
 func (w *Window) MvAddStr(y, x int, s string) {
+	if !global.isInitialized {
+		return
+	}
 	buf := stringToC(s)
 	C.mvwaddwstr(w.ptr, C.int(y), C.int(x), &buf[0])
 }
@@ -80,12 +122,18 @@ func (w *Window) MvAddStr(y, x int, s string) {
 // the resulting string to the window.  Spaces are added between
 // operands when neither is a string.
 func (w *Window) Print(a ...interface{}) {
+	if !global.isInitialized {
+		return
+	}
 	w.AddStr(fmt.Sprint(a...))
 }
 
 // Printf formats the arguments according to a format specifier and
 // writes the resulting string to the window.
 func (w *Window) Printf(format string, a ...interface{}) {
+	if !global.isInitialized {
+		return
+	}
 	w.AddStr(fmt.Sprintf(format, a...))
 }
 
@@ -93,6 +141,9 @@ func (w *Window) Printf(format string, a ...interface{}) {
 // writes the resulting string to the window.  Spaces are always added
 // between operands and a newline is appended.
 func (w *Window) Println(a ...interface{}) {
+	if !global.isInitialized {
+		return
+	}
 	w.AddStr(fmt.Sprintln(a...))
 }
 

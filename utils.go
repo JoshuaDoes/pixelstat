@@ -56,6 +56,8 @@ func hertz(hz int) time.Duration {
 }
 
 func loop(rate int, fnc func()) chan bool {
+  defer recovery()
+
   stopper := make(chan bool)
   cancel  := make(chan bool)
 

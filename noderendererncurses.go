@@ -8,7 +8,6 @@ import (
 
   "fmt"
   "math"
-  "strings"
   "sync"
   "time"
 )
@@ -148,36 +147,23 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   if terminal == nil {
     return nil
   }
-  h, w := terminal.GetMaxYX()
 
   str := fmt.Sprintf("%.0f FPS (%s)\n%s",
     fps, frametime, runtime)
   str += "\n\nNow:\n" + now
   str += "\n\nAverage:\n" + average
-  lines := strings.Split(str, "\n")
-  if len(lines) > h {
-    lines = lines[:h]
-  }
 
-  terminal.Erase()
-  for i := 0; i < len(lines); i++ {
-    l := lines[i]
-    s := len(l)
-    if s == 0 {
-      terminal.Println("")
-      continue
-    }
-    if s > w {
-      s = w
-    }
-    terminal.Println(l[:s])
-  }
-  terminal.Refresh()
+  /*terminal.Erase()
+  terminal.AddStr(str)
+  terminal.Refresh()*/
+  terminal.SetStr(str)
 
   return n.null
 }
 
 func (n *NodeRenderer) Close() error {
+  n.Lock()
+  defer n.Unlock()
   _, _ = ncurses.CursSet(n.cursor)
   ncurses.EndWin()
   terminal = nil

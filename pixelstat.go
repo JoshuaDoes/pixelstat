@@ -3,21 +3,24 @@ package main
 import (
   "github.com/spf13/pflag"
 
+  "fmt"
   "os"
   "os/signal"
+  "runtime"
   "syscall"
-//  "time"
 )
 
 var (
   pollingRate int  = 1000
-  refreshRate int  = 240
+  refreshRate int  = 120
   novrr       bool = false
   nothermal   bool = false
   netbits     bool = false
 )
 
 func main() {
+  defer recovery()
+
   pflag.IntVar(&pollingRate, "poll", pollingRate, "max polling rate per node")
   pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate per renderer")
   pflag.BoolVar(&novrr, "novrr", false, "disable variable refresh rate")
@@ -51,14 +54,28 @@ func main() {
       "neutral_therm", "quiet_therm"))
   }
 
-  t.Register(NewNodeRenderer(refreshRate, !novrr))
-  t.Start(pollingRate)
+  renderer := NewNodeRenderer(refreshRate, !novrr)
+  t.Register(renderer)
 
+  t.Start(pollingRate)
   sig := make(chan os.Signal, 1)
   signal.Notify(sig, syscall.SIGINT)  //Keyboard interrupt
   signal.Notify(sig, syscall.SIGHUP)  //Terminal disappeared
   signal.Notify(sig, syscall.SIGKILL) //Process abandoned by kernel, how are we here???
   <-sig
 
+  fmt.Printf("\nShutting down...\n")
   t.Close()
+}
+
+func recovery() {
+  if reason := recover(); reason != nil {
+    stack := make([]byte, 65536)
+    stackfull := make([]byte, 65536)
+    stackN := runtime.Stack(stack, false)
+    stackfullN := runtime.Stack(stackfull, true)
+    os.WriteFile("stack.log", stack[:stackN], 0644)
+    os.WriteFile("stackfull.log", stackfull[:stackfullN], 0644)
+    os.Exit(1)
+  }
 }

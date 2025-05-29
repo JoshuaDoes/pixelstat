@@ -26,7 +26,7 @@ func (n *NodeCPUFreqPolicy) Name() string {
 }
 
 func (n *NodeCPUFreqPolicy) Rate() int {
-  return 240
+  return 240 //The max safe rate for the Pixel scheduler on Pixel 6 Pro
 }
 
 func (n *NodeCPUFreqPolicy) Unit() string {

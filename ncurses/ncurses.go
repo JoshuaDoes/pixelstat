@@ -52,6 +52,7 @@ var global struct {
 	sync.Mutex
 
 	isInitialized bool
+	window        *Window
 	signals       chan os.Signal
 }
 
@@ -65,17 +66,14 @@ func Beep() {
 // EndWin must be called before the program exits, in order to restore
 // the terminal to a usable state.
 func EndWin() {
-	signal.Stop(global.signals)
-	close(global.signals)
-
-	C.endwin()
-
-	global.Lock()
 	if !global.isInitialized {
 		panic("ncurses not initialized")
 	}
-	global.isInitialized = false
-	global.Unlock()
+	global.isInitialized = false //Don't wait to warn other locks that we're closing now
+
+	signal.Stop(global.signals)
+	close(global.signals)
+	C.endwin()
 }
 
 // Init initialises the curses library and returns a Window
@@ -84,7 +82,6 @@ func EndWin() {
 func Init() *Window {
 	global.Lock()
 	defer global.Unlock()
-
 	if global.isInitialized {
 		panic("ncurses already initialized")
 	}
@@ -101,6 +98,7 @@ func Init() *Window {
 		ptr:     C.term_init(),
 		timeout: -1,
 	}
+	global.window = res
 
 	go signalHandler()
 
@@ -111,14 +109,16 @@ func signalHandler() {
 	for sig := range global.signals {
 		switch sig {
 		case syscall.SIGWINCH:
+			global.Lock()
 			ws, err := unix.IoctlGetWinsize(syscall.Stdout, unix.TIOCGWINSZ)
 			if err == nil {
 				C.resizeterm(C.int(ws.Row), C.int(ws.Col))
 			}
-		case syscall.SIGTSTP:
-			C.endwin()
-		case syscall.SIGCONT:
-			C.doupdate()
+			global.Unlock()
+		//case syscall.SIGTSTP:
+		//	C.endwin()
+		//case syscall.SIGCONT:
+		//	C.doupdate()
 		}
 	}
 }
@@ -156,6 +156,11 @@ func NewWin(nLines, nCols, beginY, beginX int) *Window {
 // is scrolled up one line.  Note that to get the physical scrolling
 // effect on the terminal, it is also necessary to call IdlOk().
 func (w *Window) ScrollOk(bf bool) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	C.scrollok(w.ptr, C.bool(bf))
 }
 
@@ -170,6 +175,11 @@ func (w *Window) ScrollOk(bf bool) {
 // really needed.  If insert/delete line cannot be used, curses
 // redraws the changed portions of all lines.
 func (w *Window) IdlOk(bf bool) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	C.idlok(w.ptr, C.bool(bf))
 }
 
@@ -177,6 +187,11 @@ func (w *Window) IdlOk(bf bool) {
 // returned values are the current row y and column x, relative to the
 // top-left corner of the window.
 func (w *Window) GetYX() (int, int) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	x := C.getcurx(w.ptr)
 	y := C.getcury(w.ptr)
 	return int(y), int(x)
@@ -186,6 +201,11 @@ func (w *Window) GetYX() (int, int) {
 // window in screen coordinates.  The returned values are the current
 // row y and column x, relative to the top-left corner of the screen.
 func (w *Window) GetBegYX() (int, int) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	x := C.getbegx(w.ptr)
 	y := C.getbegy(w.ptr)
 	return int(y), int(x)
@@ -193,6 +213,11 @@ func (w *Window) GetBegYX() (int, int) {
 
 // GetMaxYX returns the width and height of the window in characters.
 func (w *Window) GetMaxYX() (int, int) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	x := C.getmaxx(w.ptr)
 	y := C.getmaxy(w.ptr)
 	return int(y), int(x)
@@ -211,6 +236,11 @@ func (w *Window) GetMaxYX() (int, int) {
 // background is displayed as the graphic rendition of the character put on the
 // screen.
 func (w *Window) SetBackground(char string, attrs AttrType, colorPair ColorPair) {
+	global.Lock()
+	defer global.Unlock()
+	if !global.isInitialized {
+		return
+	}
 	var c C.cchar_t
 	wch := stringToC(char)
 	C.setcchar(&c, &wch[0], C.attr_t(attrs), C.short(colorPair), C.NULL)
