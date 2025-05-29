@@ -42,6 +42,9 @@ func (n *NodeBattery) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
   v := n.NodeFile.Value()
+  if v == nil || v.Size() < 2 {
+    return nil
+  }
   v.TruncateRight(1) //Remove the newline
   v.Seek(0, 0)
   return v

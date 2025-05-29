@@ -65,8 +65,16 @@ func (n *NodeWattage) Value() *crunchio.Buffer {
   n.Lock()
   defer n.Unlock()
 
-  amps := n.GetTracker().Value("current").Value().ReadF64LENext(1)[0] / 1000
-  volts := n.GetTracker().Value("voltage").Value().ReadF64LENext(1)[0] / 1000
+  ampsV := n.GetTracker().Value("current").Value()
+  if ampsV == nil {
+    return nil
+  }
+  amps := ampsV.ReadF64LENext(1)[0] / 1000
+  voltsV := n.GetTracker().Value("voltage").Value()
+  if voltsV == nil {
+    return nil
+  }
+  volts := voltsV.ReadF64LENext(1)[0] / 1000
 
   wattage := amps * volts
 

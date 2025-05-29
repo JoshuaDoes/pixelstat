@@ -120,6 +120,9 @@ func (tv *TrackerValue) getValue() {
 }
 
 func (tv *TrackerValue) Value() *crunchio.Buffer {
+  if tv == nil {
+    return nil
+  }
   if tv.value == nil {
     tv.getValue()
   }
@@ -127,8 +130,6 @@ func (tv *TrackerValue) Value() *crunchio.Buffer {
     return nil
   }
 
-  tv.Lock()
-  defer tv.Unlock()
   return crunchio.NewBuffer(tv.value.Bytes())
 }
 

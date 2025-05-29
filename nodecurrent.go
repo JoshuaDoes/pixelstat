@@ -43,6 +43,9 @@ func (n *NodeCurrent) Value() *crunchio.Buffer {
   defer n.Unlock()
 
   v := n.NodeFile.Value()
+  if v == nil || v.Size() < 2 {
+    return nil
+  }
   v.TruncateRight(1) //Remove the newline
 
   microA := strtof64(v.String())

@@ -95,8 +95,8 @@ func (n *NodeRenderer) ValueLen() int64 {
 
 func (n *NodeRenderer) Value() *crunchio.Buffer {
   n.Lock()
-  defer n.Unlock()
   if terminal == nil {
+    n.Unlock()
     return nil
   }
 
@@ -131,6 +131,9 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
       }
     }
   }
+
+  n.Unlock()
+
   if now != "" {
     now = now[:len(now)-1]
   }

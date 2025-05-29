@@ -3,6 +3,7 @@ package main
 import (
   "fmt"
   "os"
+  "runtime"
   "strconv"
   "time"
 )
@@ -57,13 +58,26 @@ func hertz(hz int) time.Duration {
 func loop(rate int, fnc func()) chan bool {
   stopper := make(chan bool)
   cancel  := make(chan bool)
-  pace    := hertz(rate)
 
-  go func(cancel chan bool, pace time.Duration, fnc func()) {
-    fnc()
-    next := time.Now().Add(pace)
+  go func(stopper, cancel chan bool) {
+    stop := <- stopper
+    cancel <- stop
+  }(stopper, cancel)
 
+  go func(cancel chan bool, rate int, fnc func()) {
+    pace  := hertz(rate)
+
+    start := time.Now()
     for {
+      go fnc()
+      runtime.Gosched()
+
+      remain := pace - time.Since(start)
+      if remain > 0 {
+        time.Sleep(remain)
+      }
+      start = start.Add(pace)
+
       select {
       case <- cancel:
         close(cancel)
@@ -71,18 +85,8 @@ func loop(rate int, fnc func()) chan bool {
       default:
         //pass
       }
-
-      next = next.Add(pace)
-      time.Sleep(time.Until(next))
-
-      fnc()
     }
-  }(cancel, pace, fnc)
-
-  go func(stopper, cancel chan bool) {
-    stop := <- stopper
-    cancel <- stop
-  }(stopper, cancel)
+  }(cancel, rate, fnc)
 
   return stopper
 }

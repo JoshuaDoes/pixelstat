@@ -54,7 +54,7 @@ func (n *NodeNetSpeedInterface) Name() string {
 }
 
 func (n *NodeNetSpeedInterface) Rate() int {
-  return 2
+  return 1
 }
 
 func (n *NodeNetSpeedInterface) Unit() string {
