@@ -129,7 +129,7 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   str := fmt.Sprintf("%.0f FPS (%s)\n%s",
     fps, frametime, runtime)
   str += "\n\nNow:\n" + now
-  str += "\n\nAverage:\n" + average
+  str += "\n\nAverage (min - max):\n" + average
   fmt.Println("\033[H\033[2J" + str)
 
   return n.null
@@ -201,19 +201,20 @@ func (r *NodeRender) getValue() {
   vs := ""
   as := ""
   vt := r.node.ValueType()
+  un := r.node.Unit()
   switch vt {
   case "raw":
     length := r.node.ValueLen()
     if bc := v.ByteCapacity(); bc < length {
       length = bc
     }
-    vs = fmt.Sprintf("% X", v.ReadBytes(0, length)) + r.node.Unit()
+    vs = fmt.Sprintf("% X", v.ReadBytes(0, length)) + un
   case "str":
     length := r.node.ValueLen()
     if bc := v.ByteCapacity(); bc < length {
       length = bc
     }
-    vs = string(v.ReadBytes(0, length)) + r.node.Unit()
+    vs = string(v.ReadBytes(0, length)) + un
   case "i32":
     length := r.node.ValueLen()
     if bc := v.ByteCapacity(); (bc / 4) < length {
@@ -224,8 +225,12 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += i32tostr(v.ReadI32LENext(1)[0]) + r.node.Unit()
-      as += f64tostr(r.tv.Average(i), 0) + r.node.Unit()
+      vs += fmt.Sprintf("%s%s", i32tostr(v.ReadI32LENext(1)[0]), un)
+      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+        f64tostr(r.tv.Average(i), 0), un,
+        f64tostr(r.tv.Min(i), 0), un,
+        f64tostr(r.tv.Max(i), 0), un,
+      )
     }
   case "i64":
     length := r.node.ValueLen()
@@ -237,8 +242,12 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += i64tostr(v.ReadI64LENext(1)[0]) + r.node.Unit()
-      as += f64tostr(r.tv.Average(i), 0) + r.node.Unit()
+      vs += fmt.Sprintf("%s%s", i64tostr(v.ReadI64LENext(1)[0]), un)
+      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+        f64tostr(r.tv.Average(i), 0), un,
+        f64tostr(r.tv.Min(i), 0), un,
+        f64tostr(r.tv.Max(i), 0), un,
+      )
     }
   case "f32":
     length := r.node.ValueLen()
@@ -250,8 +259,12 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += f32tostr(v.ReadF32LENext(1)[0], 2) + r.node.Unit()
-      as += f64tostr(r.tv.Average(i), 2) + r.node.Unit()
+      vs += fmt.Sprintf("%s%s", f32tostr(v.ReadF32LENext(1)[0], 2), un)
+      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+        f64tostr(r.tv.Average(i), 2), un,
+        f64tostr(r.tv.Min(i), 2), un,
+        f64tostr(r.tv.Max(i), 2), un,
+      )
     }
   case "f64":
     length := r.node.ValueLen()
@@ -263,8 +276,12 @@ func (r *NodeRender) getValue() {
         vs += " "
         as += " "
       }
-      vs += f64tostr(v.ReadF64LENext(1)[0], 2) + r.node.Unit()
-      as += f64tostr(r.tv.Average(i), 2) + r.node.Unit()
+      vs += fmt.Sprintf("%s%s", f64tostr(v.ReadF64LENext(1)[0], 2), un)
+      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+        f64tostr(r.tv.Average(i), 2), un,
+        f64tostr(r.tv.Min(i), 2), un,
+        f64tostr(r.tv.Max(i), 2), un,
+      )
     }
   default:
     perr(fmt.Errorf("renderer: invalid type: %s", vt))
