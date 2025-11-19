@@ -3,7 +3,13 @@ package main
 import (
   "github.com/JoshuaDoes/crunchio"
 
+  "fmt"
+  "strings"
   "sync"
+)
+
+var (
+  errCPUFreqNoCores = fmt.Errorf("cpufreqpolicy: no cores")
 )
 
 type NodeCPUFreqPolicy struct {
@@ -11,11 +17,18 @@ type NodeCPUFreqPolicy struct {
   *NodeFile
 
   policy string
+  cpus   []string
 }
 
 func NewNodeCPUFreqPolicy(policyPath, policy string) (*NodeCPUFreqPolicy, error) {
   n := new(NodeCPUFreqPolicy)
   n.policy = policy
+  path := policyPath + "/" + policy
+  ncpus, err := NewNodeFile(path + "/affected_cpus")
+  if err != nil {
+    return nil, errCPUFreqNoCores
+  }
+  n.cpus = strings.Split(string(ncpus.Value().Bytes()), " ")
   nf, err := NewNodeFile(policyPath + "/" + policy + "/cpuinfo_cur_freq")
   n.NodeFile = nf
   return n, err
@@ -26,7 +39,7 @@ func (n *NodeCPUFreqPolicy) Name() string {
 }
 
 func (n *NodeCPUFreqPolicy) Rate() int {
-  return 240 //The max safe rate for the Pixel scheduler on Pixel 6 Pro
+  return 1000
 }
 
 func (n *NodeCPUFreqPolicy) Unit() string {
@@ -59,4 +72,8 @@ func (n *NodeCPUFreqPolicy) Value() *crunchio.Buffer {
   v.WriteAbstract(MHz)
   v.Seek(0, 0)
   return v
+}
+
+func (n *NodeCPUFreqPolicy) CPUs() []string {
+  return n.cpus
 }

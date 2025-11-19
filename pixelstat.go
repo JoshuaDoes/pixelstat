@@ -37,6 +37,7 @@ func main() {
   t.Register(NewNodeNetSpeed(netbits, "/sys/class/net",
     "wlan0", "wlan1", "rmnet2"))
   t.Register(NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"))
+  t.Register(NewNodeCPUBandwidth())
   t.Register(NewNodeCPUSet("/dev/cpuset"))
   voltage, err := NewNodeVoltage("/sys/class/power_supply/battery/voltage_now")
   if err == nil { t.Register(voltage) }
