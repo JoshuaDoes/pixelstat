@@ -62,20 +62,23 @@ func (t *Tracker) Value(node string) *TrackerValue {
   return t.vals[node]
 }
 
-func (t *Tracker) Register(n Node) {
-  name := n.Name()
-  if name == "" {
-    perr(errNodeNameless)
-  }
-  if t.Node(name) != nil {
-    perr(errNodeExists)
-  }
-  n.SetTracker(t)
-  t.nodes = append(t.nodes, n)
+func (t *Tracker) Register(nodes ...Node) {
+  for i := 0; i < len(nodes); i++ {
+    n := nodes[i]
+    name := n.Name()
+    if name == "" {
+      perr(errNodeNameless)
+    }
+    if t.Node(name) != nil {
+      perr(errNodeExists)
+    }
+    n.SetTracker(t)
+    t.nodes = append(t.nodes, n)
 
-  if n.ValueLen() > 0 {
-    tv := new(TrackerValue)
-    tv.node = n
-    t.vals[name] = tv
+    if n.ValueLen() > 0 {
+      tv := new(TrackerValue)
+      tv.node = n
+      t.vals[name] = tv
+    }
   }
 }

@@ -45,6 +45,19 @@ func main() {
       break
     }
   }
+  for _, path := range batteryPaths {
+    path = "/sys/class/power_supply/" + path
+    voltage, err := NewNodeVoltage(path + "/voltage_now")
+    if err != nil {
+      continue
+    }
+    current, err := NewNodeCurrent(path + "/current_now")
+    if err != nil {
+      continue
+    }
+    t.Register(voltage, current, NewNodeWattage())
+    break
+  }
 
   t.Register(NewNodeNetSpeed(netbits, "/sys/class/net"))
 
@@ -53,14 +66,6 @@ func main() {
   t.Register(NewNodeCPUBandwidth())
 
   t.Register(NewNodeCPUSet("/dev/cpuset"))
-
-  voltage, err := NewNodeVoltage("/sys/class/power_supply/battery/voltage_now")
-  if err == nil { t.Register(voltage) }
-
-  current, err := NewNodeCurrent("/sys/class/power_supply/battery/current_now")
-  if err == nil { t.Register(current) }
-
-  t.Register(NewNodeWattage())
 
   if !nothermal {
     t.Register(NewNodeThermal("/sys/class/thermal",
