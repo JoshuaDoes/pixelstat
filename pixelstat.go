@@ -68,13 +68,7 @@ func main() {
   t.Register(NewNodeCPUSet("/dev/cpuset"))
 
   if !nothermal {
-    t.Register(NewNodeThermal("/sys/class/thermal",
-      "LITTLE", "MID", "BIG",
-      "G3D", "TPU", "soc",
-      "gnss_tcxo_therm", "disp_therm",
-      "usb_pwr_therm", "usb_pwr_therm2",
-      "qi_therm", "battery", "batt_vs", "maxfg",
-      "neutral_therm", "quiet_therm"))
+    t.Register(NewNodeThermal("/sys/class/thermal"))
   }
 
   renderer := NewNodeRenderer(refreshRate, !novrr)

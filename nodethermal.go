@@ -31,17 +31,21 @@ func (n *NodeThermal) SetTracker(t *Tracker) {
     }
 
     sensor := file.Name()
-    found := false
+    found := true
 
     name, err := os.ReadFile(n.thermalPath + "/" + sensor + "/type")
     if err != nil {
       continue
     }
     nameS := string(name[:len(name)-1])
-    for j := 0; j < len(n.sensors); j++ {
-      if n.sensors[j] == nameS {
-        found = true
-        break
+
+    if len(n.sensors) > 0 {
+      found = false
+      for j := 0; j < len(n.sensors); j++ {
+        if n.sensors[j] == nameS {
+          found = true
+          break
+        }
       }
     }
     if !found {
