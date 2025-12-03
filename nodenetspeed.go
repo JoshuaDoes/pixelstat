@@ -31,11 +31,14 @@ func (n *NodeNetSpeed) SetTracker(t *Tracker) {
     }
 
     iF := file.Name()
-    found := false
-    for j := 0; j < len(n.iFs); j++ {
-      if n.iFs[j] == iF {
-        found = true
-        break
+    found := true
+    if len(n.iFs) > 0 {
+      found = false
+      for j := 0; j < len(n.iFs); j++ {
+        if n.iFs[j] == iF {
+          found = true
+          break
+        }
       }
     }
     if !found {

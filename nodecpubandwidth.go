@@ -22,7 +22,11 @@ type NodeCPUBandwidth struct {
 func (n *NodeCPUBandwidth) SetTracker(t *Tracker) {
   n.pols = make([]Node, 0)
   for _, pol := range t.Nodes() {
-    if pol.Name()[:6] == "policy" {
+    name := pol.Name()
+    if len(name) < 7 {
+      continue
+    }
+    if name[:6] == "policy" {
       n.pols = append(n.pols, pol)
       rate := pol.Rate()
       if rate > n.rate {

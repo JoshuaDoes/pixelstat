@@ -19,7 +19,7 @@ var (
 )
 
 func main() {
-  defer recovery()
+  //defer recovery()
 
   pflag.IntVar(&pollingRate, "poll", pollingRate, "max polling rate per node")
   pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate per renderer")
@@ -32,17 +32,24 @@ func main() {
 
   battery, err := NewNodeBattery("/sys/class/power_supply/battery/capacity")
   if err == nil { t.Register(battery) }
+
   charging, err := NewNodeCharging("/sys/class/power_supply/battery/status")
   if err == nil { t.Register(charging) }
-  t.Register(NewNodeNetSpeed(netbits, "/sys/class/net",
-    "wlan0", "wlan1", "rmnet2"))
+
+  t.Register(NewNodeNetSpeed(netbits, "/sys/class/net"))
+
   t.Register(NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"))
+
   t.Register(NewNodeCPUBandwidth())
+
   t.Register(NewNodeCPUSet("/dev/cpuset"))
+
   voltage, err := NewNodeVoltage("/sys/class/power_supply/battery/voltage_now")
   if err == nil { t.Register(voltage) }
+
   current, err := NewNodeCurrent("/sys/class/power_supply/battery/current_now")
   if err == nil { t.Register(current) }
+
   t.Register(NewNodeWattage())
 
   if !nothermal {

@@ -28,7 +28,10 @@ func (n *NodeWattage) SetTracker(t *Tracker) {
   if vn == nil {
     return
   }
-  n.rate = cn.Rate() + vn.Rate()
+  n.rate = cn.Rate()
+  if rate := vn.Rate(); rate > n.rate {
+    n.rate = rate
+  }
   n.Tracker = t
 }
 
