@@ -29,7 +29,10 @@ func NewNodeCPUFreqPolicy(policyPath, policy string) (*NodeCPUFreqPolicy, error)
     return nil, errCPUFreqNoCores
   }
   n.cpus = strings.Split(string(ncpus.Value().Bytes()), " ")
-  nf, err := NewNodeFile(policyPath + "/" + policy + "/cpuinfo_cur_freq")
+  nf, err := NewNodeFile(path + "/cpuinfo_cur_freq")
+  if err != nil {
+    nf, err = NewNodeFile(path + "/scaling_cur_freq")
+  }
   n.NodeFile = nf
   return n, err
 }

@@ -21,7 +21,7 @@ func (n *NodeCPUFreq) SetTracker(t *Tracker) {
       continue
     }
     policy := file.Name()
-    freqFile, err := os.Open(n.policyPath + "/" + policy + "/cpuinfo_cur_freq")
+    freqFile, err := os.Open(n.policyPath + "/" + policy + "/affected_cpus")
     if err != nil {
       continue
     }
