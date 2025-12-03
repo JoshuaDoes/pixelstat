@@ -30,11 +30,21 @@ func main() {
 
   t := NewTracker()
 
-  battery, err := NewNodeBattery("/sys/class/power_supply/battery/capacity")
-  if err == nil { t.Register(battery) }
-
-  charging, err := NewNodeCharging("/sys/class/power_supply/battery/status")
-  if err == nil { t.Register(charging) }
+  batteryPaths := []string{"battery", "BAT0"}
+  for _, path := range batteryPaths {
+    battery, err := NewNodeBattery("/sys/class/power_supply/" + path + "/capacity")
+    if err == nil {
+      t.Register(battery)
+      break
+    }
+  }
+  for _, path := range batteryPaths {
+    charging, err := NewNodeCharging("/sys/class/power_supply/" + path + "/status")
+    if err == nil {
+      t.Register(charging)
+      break
+    }
+  }
 
   t.Register(NewNodeNetSpeed(netbits, "/sys/class/net"))
 
