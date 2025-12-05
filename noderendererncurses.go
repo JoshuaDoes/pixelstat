@@ -4,7 +4,7 @@ package main
 
 import (
   "github.com/JoshuaDoes/crunchio"
-  "seehuhn.de/go/ncurses"
+  "github.com/JoshuaDoes/go-ncurses"
 
   "fmt"
   "math"
