@@ -32,6 +32,10 @@ type NodeRenderer struct {
   start time.Time
   polls []*NodeRender
   null  *crunchio.Buffer
+
+  minFrametime,
+  maxFrametime   time.Duration
+  minFps, maxFps float64
 }
 
 func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
@@ -141,15 +145,33 @@ func (n *NodeRenderer) Value() *crunchio.Buffer {
   }
 
   frametime := time.Since(startFrame)
-  fps := math.Round(n.GetTracker().Value(n.Name()).PollsPerSecond())
+  rawFps := n.GetTracker().Value(n.Name()).PollsPerSecond()
+  fps := math.Round(rawFps)
   runtime := time.Since(n.start).Truncate(time.Millisecond)
 
   if terminal == nil {
     return nil
   }
 
-  str := fmt.Sprintf("%.0f FPS (%s)\n%s",
-    fps, frametime, runtime)
+  if frametime > n.maxFrametime {
+    n.maxFrametime = frametime
+  }
+  if frametime < n.minFrametime || n.minFrametime == 0 {
+    n.minFrametime = frametime
+  }
+
+  if fps > n.maxFps {
+    n.maxFps = rawFps
+  }
+  if fps < n.minFps || n.minFps == 0 {
+    n.minFps = rawFps
+  }
+
+  str := fmt.Sprintf("%.0f FPS (%s)\n%.2f - %.2f FPS (%s - %s)\n%s",
+    fps, frametime,
+    n.minFps, n.maxFps,
+    n.minFrametime, n.maxFrametime,
+    runtime)
   str += "\n\nNow:\n" + now
   str += "\n\nAverage (min - max):\n" + average
 

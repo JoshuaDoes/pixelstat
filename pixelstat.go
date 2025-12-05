@@ -8,6 +8,7 @@ import (
   "os/signal"
   "runtime"
   "syscall"
+  "time"
 )
 
 var (
@@ -81,8 +82,15 @@ func main() {
   signal.Notify(sig, syscall.SIGKILL) //Process abandoned by kernel, how are we here???
   <-sig
 
+  go t.Close()
   fmt.Printf("\nShutting down...\n")
-  t.Close()
+  for {
+    time.Sleep(time.Millisecond * 1)
+    if t.Closed() {
+      break
+    }
+  }
+  fmt.Println("Goodbye!")
 }
 
 func recovery() {
@@ -93,6 +101,7 @@ func recovery() {
     stackfullN := runtime.Stack(stackfull, true)
     os.WriteFile("stack.log", stack[:stackN], 0644)
     os.WriteFile("stackfull.log", stackfull[:stackfullN], 0644)
+    os.Stderr.Write(stack)
     os.Exit(1)
   }
 }

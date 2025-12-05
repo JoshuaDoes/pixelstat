@@ -38,6 +38,10 @@ func (t *Tracker) Close() {
   t.nodes = nil
 }
 
+func (t *Tracker) Closed() bool {
+  return t.vals == nil && t.nodes == nil
+}
+
 func (t *Tracker) Nodes() []Node {
   nodes := make([]Node, 0)
   for i := 0; i < len(t.nodes); i++ {
