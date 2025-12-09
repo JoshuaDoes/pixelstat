@@ -74,9 +74,16 @@ func (n *NodeCPUBandwidth) Value() *crunchio.Buffer {
   v := crunchio.NewBuffer()
   v.Grow(4)
   for _, pol := range n.pols {
-    bw := pol.Value().ReadI32LENext(1)
+    if pol == nil {
+      continue //TODO: Drop from n.pols
+    }
+    value := pol.Value()
+    if value == nil {
+      continue //TODO: Drop from n.pols
+    }
+    bw := value.ReadI32LENext(1)
     if len(bw) == 0 {
-      return nil //All policy nodes must be able to respond
+      continue
     }
     npol := pol.(*NodeCPUFreqPolicy)
     bandwidth += int32(len(npol.CPUs())) * bw[0]
