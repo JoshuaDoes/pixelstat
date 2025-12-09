@@ -15,6 +15,8 @@ var (
   pollingRate int  = 1000
   refreshRate int  = 120
   novrr       bool = false
+  nocpuset    bool = false
+  nonet       bool = false
   nothermal   bool = false
   netbits     bool = false
 )
@@ -25,6 +27,8 @@ func main() {
   pflag.IntVar(&pollingRate, "poll", pollingRate, "max polling rate per node")
   pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate per renderer")
   pflag.BoolVar(&novrr, "novrr", false, "disable variable refresh rate")
+  pflag.BoolVar(&nocpuset, "nocpuset", false, "disable cpuset nodes")
+  pflag.BoolVar(&nonet, "nonet", false, "disable networking nodes")
   pflag.BoolVar(&nothermal, "nothermal", false, "disable thermal nodes")
   pflag.BoolVar(&netbits, "netbits", false, "use bits instead of bytes for netspeed")
   pflag.Parse()
@@ -60,13 +64,17 @@ func main() {
     break
   }
 
-  t.Register(NewNodeNetSpeed(netbits, "/sys/class/net"))
-
   t.Register(NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"))
 
   t.Register(NewNodeCPUBandwidth())
 
-  t.Register(NewNodeCPUSet("/dev/cpuset"))
+  if !nocpuset {
+    t.Register(NewNodeCPUSet("/dev/cpuset"))
+  }
+
+  if !nonet {
+    t.Register(NewNodeNetSpeed(netbits, "/sys/class/net"))
+  }
 
   if !nothermal {
     t.Register(NewNodeThermal("/sys/class/thermal"))
