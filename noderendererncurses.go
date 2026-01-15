@@ -1,344 +1,361 @@
+//go:build ncurses
 // +build ncurses
 
 package main
 
 import (
-  "github.com/JoshuaDoes/crunchio"
-  "github.com/JoshuaDoes/go-ncurses"
+	"github.com/JoshuaDoes/crunchio"
+	"github.com/JoshuaDoes/go-ncurses"
 
-  "fmt"
-  "math"
-  "sync"
-  "time"
+	"fmt"
+	"math"
+	"sync"
+	"time"
 )
 
 var (
-  terminal *ncurses.Window
+	termlock sync.Mutex
+	terminal *ncurses.Window
+	lastStr  string
+	lastTime time.Time
 )
 
+func ncursesSetString(l time.Time, s string) {
+	if lastStr == s || time.Since(lastTime) < time.Since(l) {
+		return
+	}
+	termlock.Lock()
+	defer termlock.Unlock()
+	lastStr = s
+	lastTime = l
+	terminal.SetStr(s)
+}
+
 type NodeRenderer struct {
-  sync.Mutex
-  *NodeBase
+	sync.Mutex
+	*NodeBase
 
-  hz  int
-  vrr bool
+	hz  int
+	vrr bool
 
-  cursor ncurses.CursorVisibility
+	cursor ncurses.CursorVisibility
 
-  nameLen int
-  nameFmt string
-  unitLen int
+	nameLen int
+	nameFmt string
+	unitLen int
 
-  start time.Time
-  polls []*NodeRender
-  null  *crunchio.Buffer
+	start time.Time
+	polls []*NodeRender
+	null  *crunchio.Buffer
 
-  minFrametime,
-  maxFrametime   time.Duration
-  minFps, maxFps float64
+	minFrametime,
+	maxFrametime time.Duration
+	minFps, maxFps float64
 }
 
 func NewNodeRenderer(hz int, vrr bool) *NodeRenderer {
-  n := new(NodeRenderer)
-  n.NodeBase = NewNodeBase()
-  n.hz = hz
-  n.vrr = vrr
-  n.null = crunchio.NewBuffer(make([]byte, 1))
-  n.polls = make([]*NodeRender, 0)
-  return n
+	n := new(NodeRenderer)
+	n.NodeBase = NewNodeBase()
+	n.hz = hz
+	n.vrr = vrr
+	n.null = crunchio.NewBuffer(make([]byte, 1))
+	n.polls = make([]*NodeRender, 0)
+	return n
 }
 
 func (n *NodeRenderer) SetTracker(t *Tracker) {
-  nodes := t.Nodes()
+	nodes := t.Nodes()
 
-  nameLen := 0
-  unitLen := 0
-  for i := 0; i < len(nodes); i++ {
-    node := nodes[i]
-    if node.ValueType() == "" {
-      continue
-    }
-    if nl := len(node.Name()); nl > nameLen {
-      nameLen = nl
-    }
-    if ul := len(node.Unit()); ul > unitLen {
-      unitLen = ul
-    }
+	nameLen := 0
+	unitLen := 0
+	for i := 0; i < len(nodes); i++ {
+		node := nodes[i]
+		if node.ValueType() == "" {
+			continue
+		}
+		if nl := len(node.Name()); nl > nameLen {
+			nameLen = nl
+		}
+		if ul := len(node.Unit()); ul > unitLen {
+			unitLen = ul
+		}
 
-    r := new(NodeRender)
-    r.p = n
-    r.node = node
-    r.tv = t.Value(node.Name())
-    n.polls = append(n.polls, r)
-  }
-  n.nameLen = nameLen
-  n.nameFmt = "%" + fmt.Sprintf("%d", nameLen) + "s"
-  n.unitLen = unitLen
+		r := new(NodeRender)
+		r.p = n
+		r.node = node
+		r.tv = t.Value(node.Name())
+		n.polls = append(n.polls, r)
+	}
+	n.nameLen = nameLen
+	n.nameFmt = "%" + fmt.Sprintf("%d", nameLen) + "s"
+	n.unitLen = unitLen
 
-  terminal = ncurses.Init()
-  cursor, err := ncurses.CursSet(ncurses.CursorOff)
-  perr(err)
-  n.cursor = cursor
+	terminal = ncurses.Init()
+	cursor, err := ncurses.CursSet(ncurses.CursorOff)
+	perr(err)
+	n.cursor = cursor
 
-  n.start = time.Now()
-  n.Tracker = t
+	n.start = time.Now()
+	n.Tracker = t
 }
 
 func (n *NodeRenderer) Name() string {
-  return "renderer"
+	return "renderer"
 }
 
 func (n *NodeRenderer) Rate() int {
-  return n.hz
+	return n.hz
 }
 
 func (n *NodeRenderer) ValueLen() int64 {
-  return 1
+	return 1
 }
 
 func (n *NodeRenderer) Value() *crunchio.Buffer {
-  n.Lock()
-  if terminal == nil {
-    n.Unlock()
-    return nil
-  }
+	n.Lock()
+	if terminal == nil {
+		n.Unlock()
+		return nil
+	}
 
-  startFrame := time.Now()
+	startFrame := time.Now()
 
-  pollers := n.Pollers()
-  for i := 0; i < pollers; i++ {
-    n.GetRender(i).Poll()
-  }
+	pollers := n.Pollers()
+	for i := 0; i < pollers; i++ {
+		n.GetRender(i).Poll()
+	}
 
-  newFrame := true
-  if n.vrr {
-    newFrame = false
-    for i := 0; i < pollers; i++ {
-      if n.GetRender(i).NewFrame() {
-        newFrame = true
-        break
-      }
-    }
-  }
+	newFrame := true
+	if n.vrr {
+		newFrame = false
+		for i := 0; i < pollers; i++ {
+			if n.GetRender(i).NewFrame() {
+				newFrame = true
+				break
+			}
+		}
+	}
+	if !newFrame {
+		return n.null
+	}
 
-  now := ""
-  average := ""
-  if newFrame {
-    for i := 0; i < pollers; i++ {
-      p := n.GetRender(i)
-      if val := p.val; val != "" {
-        now += val + "\n"
-      }
-      if avg := p.avg; avg != "" {
-        average += avg + "\n"
-      }
-    }
-  }
+	now := ""
+	average := ""
+	if newFrame {
+		for i := 0; i < pollers; i++ {
+			p := n.GetRender(i)
+			if val := p.val; val != "" {
+				now += val + "\n"
+			}
+			if avg := p.avg; avg != "" {
+				average += avg + "\n"
+			}
+		}
+	}
 
-  n.Unlock()
+	n.Unlock()
 
-  if now != "" {
-    now = now[:len(now)-1]
-  }
-  if average != "" {
-    average = average[:len(average)-1]
-  }
+	if now != "" {
+		now = now[:len(now)-1]
+	}
+	if average != "" {
+		average = average[:len(average)-1]
+	}
 
-  frametime := time.Since(startFrame)
-  rawFps := n.GetTracker().Value(n.Name()).PollsPerSecond()
-  fps := math.Round(rawFps)
-  runtime := time.Since(n.start).Truncate(time.Millisecond)
+	frametime := time.Since(startFrame)
+	rawFps := n.GetTracker().Value(n.Name()).PollsPerSecond()
+	fps := math.Round(rawFps)
+	runtime := time.Since(n.start).Truncate(time.Millisecond)
 
-  if terminal == nil {
-    return nil
-  }
+	if terminal == nil {
+		return nil
+	}
 
-  if frametime > n.maxFrametime {
-    n.maxFrametime = frametime
-  }
-  if frametime < n.minFrametime || n.minFrametime == 0 {
-    n.minFrametime = frametime
-  }
+	if frametime > n.maxFrametime {
+		n.maxFrametime = frametime
+	}
+	if frametime < n.minFrametime || n.minFrametime == 0 {
+		n.minFrametime = frametime
+	}
 
-  if fps > n.maxFps {
-    n.maxFps = rawFps
-  }
-  if fps < n.minFps || n.minFps == 0 {
-    n.minFps = rawFps
-  }
+	if fps > n.maxFps {
+		n.maxFps = rawFps
+	}
+	if fps < n.minFps || n.minFps == 0 {
+		n.minFps = rawFps
+	}
 
-  str := fmt.Sprintf("%.0f FPS (%s)\n%.2f - %.2f FPS (%s - %s)\n%s",
-    fps, frametime,
-    n.minFps, n.maxFps,
-    n.minFrametime, n.maxFrametime,
-    runtime)
-  str += "\n\nNow:\n" + now
-  str += "\n\nAverage (min - max):\n" + average
+	str := fmt.Sprintf("%.0f FPS (%s)\n%.2f - %.2f FPS (%s - %s)\n%s\n\nNow:\n%s\n\nAverage (min - max):\n%s",
+		fps, frametime,
+		n.minFps, n.maxFps,
+		n.minFrametime, n.maxFrametime,
+		runtime,
+		now, average)
 
-  terminal.SetStr(str)
+	go ncursesSetString(startFrame, str)
 
-  return n.null //We don't provide a real node!
+	return n.null //We don't provide a real node!
 }
 
 func (n *NodeRenderer) Close() error {
-  n.Lock()
-  defer n.Unlock()
-  _, _ = ncurses.CursSet(n.cursor)
-  ncurses.EndWin()
-  terminal = nil
-  return nil
+	n.Lock()
+	defer n.Unlock()
+	_, _ = ncurses.CursSet(n.cursor)
+	ncurses.EndWin()
+	terminal = nil
+	return nil
 }
 
 func (n *NodeRenderer) Pollers() int {
-  return len(n.polls)
+	return len(n.polls)
 }
 
 func (n *NodeRenderer) GetRender(i int) *NodeRender {
-  return n.polls[i]
+	return n.polls[i]
 }
 
 type NodeRender struct {
-  sync.Mutex
+	sync.Mutex
 
-  p     *NodeRenderer
-  node  Node
-  tv    *TrackerValue
-  polls int64
-  val   string
-  avg   string
-  newF  bool
-  poll  bool
+	p     *NodeRenderer
+	node  Node
+	tv    *TrackerValue
+	polls int64
+	val   string
+	avg   string
+	newF  bool
+	poll  bool
 }
 
 func (r *NodeRender) Poll() {
-  if r.poll {
-    return
-  }
-  r.Lock()
-  defer r.Unlock()
-  r.poll = true
+	if r.poll {
+		return
+	}
+	r.Lock()
+	defer r.Unlock()
+	r.poll = true
 
-  n := r.node
-  old := r.polls
-  tv := r.p.GetTracker().Value(n.Name())
-  if tv != nil {
-    r.polls = tv.Polls()
-    if r.polls > old {
-      r.getValue()
-      r.newF = true
-    }
-  }
-  r.poll = false
+	n := r.node
+	old := r.polls
+	tv := r.p.GetTracker().Value(n.Name())
+	if tv != nil {
+		r.polls = tv.Polls()
+		if r.polls > old {
+			r.getValue()
+			r.newF = true
+		}
+	}
+	r.poll = false
 }
 
 func (r *NodeRender) NewFrame() bool {
-  r.Lock()
-  defer r.Unlock()
+	r.Lock()
+	defer r.Unlock()
 
-  newF := r.newF
-  r.newF = false
-  return newF
+	newF := r.newF
+	r.newF = false
+	return newF
 }
 
 func (r *NodeRender) getValue() {
-  v := r.tv.Value()
-  if v == nil || v.ByteCapacity() == 0 {
-    r.val = "null"
-    r.avg = "null"
-    return
-  }
+	v := r.tv.Value()
+	if v == nil || v.ByteCapacity() == 0 {
+		r.val = "null"
+		r.avg = "null"
+		return
+	}
 
-  vs := ""
-  as := ""
-  vt := r.node.ValueType()
-  un := r.node.Unit()
-  switch vt {
-  case "raw":
-    length := r.node.ValueLen()
-    if bc := v.ByteCapacity(); bc < length {
-      length = bc
-    }
-    vs = fmt.Sprintf("% X", v.ReadBytes(0, length)) + un
-  case "str":
-    length := r.node.ValueLen()
-    if bc := v.ByteCapacity(); bc < length {
-      length = bc
-    }
-    vs = string(v.ReadBytes(0, length)) + un
-  case "i32":
-    length := r.node.ValueLen()
-    if bc := v.ByteCapacity(); (bc / 4) < length {
-      length = (bc / 4)
-    }
-    for i := int64(0); i < length; i++ {
-      if i > 0 {
-        vs += " "
-        as += " "
-      }
-      vs += fmt.Sprintf("%s%s", i32tostr(v.ReadI32LENext(1)[0]), un)
-      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
-        f64tostr(r.tv.Average(i), 0), un,
-        f64tostr(r.tv.Min(i), 0), un,
-        f64tostr(r.tv.Max(i), 0), un,
-      )
-    }
-  case "i64":
-    length := r.node.ValueLen()
-    if bc := v.ByteCapacity(); (bc / 8) < length {
-      length = (bc / 8)
-    }
-    for i := int64(0); i < length; i++ {
-      if i > 0 {
-        vs += " "
-        as += " "
-      }
-      vs += fmt.Sprintf("%s%s", i64tostr(v.ReadI64LENext(1)[0]), un)
-      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
-        f64tostr(r.tv.Average(i), 0), un,
-        f64tostr(r.tv.Min(i), 0), un,
-        f64tostr(r.tv.Max(i), 0), un,
-      )
-    }
-  case "f32":
-    length := r.node.ValueLen()
-    if bc := v.ByteCapacity(); (bc / 4) < length {
-      length = (bc / 4)
-    }
-    for i := int64(0); i < length; i++ {
-      if i > 0 {
-        vs += " "
-        as += " "
-      }
-      vs += fmt.Sprintf("%s%s", f32tostr(v.ReadF32LENext(1)[0], 2), un)
-      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
-        f64tostr(r.tv.Average(i), 2), un,
-        f64tostr(r.tv.Min(i), 2), un,
-        f64tostr(r.tv.Max(i), 2), un,
-      )
-    }
-  case "f64":
-    length := r.node.ValueLen()
-    if bc := v.ByteCapacity(); (bc / 8) < length {
-      length = (bc / 8)
-    }
-    for i := int64(0); i < length; i++ {
-      if i > 0 {
-        vs += " "
-        as += " "
-      }
-      vs += fmt.Sprintf("%s%s", f64tostr(v.ReadF64LENext(1)[0], 2), un)
-      as += fmt.Sprintf("%s%s (%s%s - %s%s)",
-        f64tostr(r.tv.Average(i), 2), un,
-        f64tostr(r.tv.Min(i), 2), un,
-        f64tostr(r.tv.Max(i), 2), un,
-      )
-    }
-  default:
-    perr(fmt.Errorf("renderer: invalid type: %s", vt))
-  }
+	vs := ""
+	as := ""
+	vt := r.node.ValueType()
+	un := r.node.Unit()
+	switch vt {
+	case "raw":
+		length := r.node.ValueLen()
+		if bc := v.ByteCapacity(); bc < length {
+			length = bc
+		}
+		vs = fmt.Sprintf("% X", v.ReadBytes(0, length)) + un
+	case "str":
+		length := r.node.ValueLen()
+		if bc := v.ByteCapacity(); bc < length {
+			length = bc
+		}
+		vs = string(v.ReadBytes(0, length)) + un
+	case "i32":
+		length := r.node.ValueLen()
+		if bc := v.ByteCapacity(); (bc / 4) < length {
+			length = (bc / 4)
+		}
+		for i := int64(0); i < length; i++ {
+			if i > 0 {
+				vs += " "
+				as += " "
+			}
+			vs += fmt.Sprintf("%s%s", i32tostr(v.ReadI32LENext(1)[0]), un)
+			as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+				f64tostr(r.tv.Average(i), 0), un,
+				f64tostr(r.tv.Min(i), 0), un,
+				f64tostr(r.tv.Max(i), 0), un,
+			)
+		}
+	case "i64":
+		length := r.node.ValueLen()
+		if bc := v.ByteCapacity(); (bc / 8) < length {
+			length = (bc / 8)
+		}
+		for i := int64(0); i < length; i++ {
+			if i > 0 {
+				vs += " "
+				as += " "
+			}
+			vs += fmt.Sprintf("%s%s", i64tostr(v.ReadI64LENext(1)[0]), un)
+			as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+				f64tostr(r.tv.Average(i), 0), un,
+				f64tostr(r.tv.Min(i), 0), un,
+				f64tostr(r.tv.Max(i), 0), un,
+			)
+		}
+	case "f32":
+		length := r.node.ValueLen()
+		if bc := v.ByteCapacity(); (bc / 4) < length {
+			length = (bc / 4)
+		}
+		for i := int64(0); i < length; i++ {
+			if i > 0 {
+				vs += " "
+				as += " "
+			}
+			vs += fmt.Sprintf("%s%s", f32tostr(v.ReadF32LENext(1)[0], 2), un)
+			as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+				f64tostr(r.tv.Average(i), 2), un,
+				f64tostr(r.tv.Min(i), 2), un,
+				f64tostr(r.tv.Max(i), 2), un,
+			)
+		}
+	case "f64":
+		length := r.node.ValueLen()
+		if bc := v.ByteCapacity(); (bc / 8) < length {
+			length = (bc / 8)
+		}
+		for i := int64(0); i < length; i++ {
+			if i > 0 {
+				vs += " "
+				as += " "
+			}
+			vs += fmt.Sprintf("%s%s", f64tostr(v.ReadF64LENext(1)[0], 2), un)
+			as += fmt.Sprintf("%s%s (%s%s - %s%s)",
+				f64tostr(r.tv.Average(i), 2), un,
+				f64tostr(r.tv.Min(i), 2), un,
+				f64tostr(r.tv.Max(i), 2), un,
+			)
+		}
+	default:
+		perr(fmt.Errorf("renderer: invalid type: %s", vt))
+	}
 
-  r.val = fmt.Sprintf(r.p.nameFmt + ": %s", r.node.Name(), vs)
-  if as != "" {
-    r.avg = fmt.Sprintf(r.p.nameFmt + ": %s (%.0fpps, %d)", r.node.Name(), as, math.Round(r.tv.PollsPerSecond()), r.tv.Polls())
-  }
+	r.val = fmt.Sprintf(r.p.nameFmt+": %s", r.node.Name(), vs)
+	if as != "" {
+		r.avg = fmt.Sprintf(r.p.nameFmt+": %s (%.0fpps, %d)", r.node.Name(), as, math.Round(r.tv.PollsPerSecond()), r.tv.Polls())
+	}
 }

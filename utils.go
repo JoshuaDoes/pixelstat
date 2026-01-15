@@ -1,95 +1,86 @@
 package main
 
 import (
-  "fmt"
-  "os"
-  "strconv"
-  "time"
+	"fmt"
+	"os"
+	"strconv"
+	"time"
 )
 
 func strtoi64(in string) int64 {
-  num, err := strconv.ParseInt(in, 10, 64)
-  perr(err)
-  return num
+	num, err := strconv.ParseInt(in, 10, 64)
+	perr(err)
+	return num
 }
 func i64tostr(in int64) string {
-  return fmt.Sprintf("%d", in)
+	return fmt.Sprintf("%d", in)
 }
 
 func strtoi32(in string) int32 {
-  num, err := strconv.ParseInt(in, 10, 32)
-  perr(err)
-  return int32(num)
+	num, err := strconv.ParseInt(in, 10, 32)
+	perr(err)
+	return int32(num)
 }
 func i32tostr(in int32) string {
-  return fmt.Sprintf("%d", in)
+	return fmt.Sprintf("%d", in)
 }
 
 func strtof64(in string) float64 {
-  num, err := strconv.ParseFloat(in, 64)
-  perr(err)
-  return num
+	num, err := strconv.ParseFloat(in, 64)
+	perr(err)
+	return num
 }
 func f64tostr(in float64, precision int64) string {
-  return fmt.Sprintf("%." + i64tostr(precision) + "f", in)
+	return fmt.Sprintf("%."+i64tostr(precision)+"f", in)
 }
 
 func strtof32(in string) float32 {
-  num, err := strconv.ParseFloat(in, 32)
-  perr(err)
-  return float32(num)
+	num, err := strconv.ParseFloat(in, 32)
+	perr(err)
+	return float32(num)
 }
 func f32tostr(in float32, precision int64) string {
-  return fmt.Sprintf("%." + i64tostr(precision) + "f", in)
+	return fmt.Sprintf("%."+i64tostr(precision)+"f", in)
 }
 
 func perr(err error) {
-  if err != nil {
-    fmt.Printf("\n\nERROR!\n\n%v\n\n", err)
-    os.Exit(1)
-  }
+	if err != nil {
+		fmt.Printf("\n\nERROR!\n\n%v\n\n", err)
+		os.Exit(1)
+	}
 }
 
-func hertz(hz int) time.Duration {
-  return time.Second / time.Duration(hz)
+// Rate converts a frequency in hertz to a time duration.
+func Rate(hz int) time.Duration {
+	return time.Second / time.Duration(hz)
 }
 
-func loop(rate int, fnc func()) chan bool {
-  defer recovery()
-
-  stopper := make(chan bool)
-  cancel  := make(chan bool)
-
-  go loopSignal(stopper, cancel)
-  go loopRunner(cancel, rate, fnc)
-
-  return stopper
+// RatePrecise converts a frequency in hertz to a time duration with the highest precision that Go can muster.
+func RatePrecise(hz float64) time.Duration {
+	return time.Second / time.Duration(hz)
 }
 
-func loopSignal(stopper, cancel chan bool) {
-  defer recovery()
-  stop := <- stopper
-  cancel <- stop
+func Loop(sleep *time.Duration, fnc func()) (stopper chan bool, timeStart *time.Time) {
+	stopper = make(chan bool)
+	now := time.Now()
+	loopThread(stopper, sleep, &now, fnc)
+	return stopper, &now
 }
 
-func loopRunner(cancel chan bool, rate int, fnc func()) {
-  defer recovery()
-  pace := hertz(rate)
-
-  //It's expected for timeStart to fall behind if pacing is too fast,
-  //could be exposed later on to report how far behind it falls.
-  timeStart := time.Now()
-  for {
-    fnc()
-    time.Sleep(pace - time.Since(timeStart))
-    timeStart = timeStart.Add(pace)
-
-    select {
-    case <- cancel:
-      close(cancel)
-      return
-    default:
-      //pass
-    }
-  }
+func loopThread(stopper chan bool, sleep *time.Duration, timeStart *time.Time, fnc func()) {
+	//It's expected for timeStart to fall behind if pacing is too fast,
+	//could be exposed later on to report how far behind it falls.
+	go func(stopper chan bool, sleep *time.Duration, timeStart *time.Time, fnc func()) {
+		for {
+			go fnc()
+			time.Sleep(*sleep - time.Since(*timeStart))
+			*timeStart = timeStart.Add(*sleep)
+			select {
+			case <-stopper:
+				close(stopper)
+				return
+			default:
+			}
+		}
+	}(stopper, sleep, timeStart, fnc)
 }
