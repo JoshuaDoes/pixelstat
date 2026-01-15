@@ -64,13 +64,10 @@ func main() {
     break
   }
 
-  gpuPaths := []string{"/sys/class/devfreq/34f00000.gpu0/cur_freq", "/sys/devices/platform/1c500000.mali/cur_freq"}
-  for _, path := range gpuPaths {
-    gpufreq, err := NewNodeGPUFreq(path)
-    if err == nil {
-      t.Register(gpufreq)
-      break
-    }
+  if gpufreq, err := NewNodeGPUFreq("/sys/class/devfreq/34f00000.gpu0/cur_freq", 1000000); err == nil {
+    t.Register(gpufreq)
+  } else if gpufreq, err := NewNodeGPUFreq("/sys/devices/platform/1c500000.mali/cur_freq", 1000); err == nil {
+    t.Register(gpufreq)
   }
 
   t.Register(NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"))
