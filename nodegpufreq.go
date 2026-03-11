@@ -9,14 +9,12 @@ import (
 type NodeGPUFreq struct {
   sync.Mutex
   *NodeFile
-  d int32
 }
 
-func NewNodeGPUFreq(path string, division int32) (*NodeGPUFreq, error) {
+func NewNodeGPUFreq(path string) (*NodeGPUFreq, error) {
   n := new(NodeGPUFreq)
   nf, err := NewNodeFile(path)
   n.NodeFile = nf
-  n.d = division
   return n, err
 }
 
@@ -50,11 +48,7 @@ func (n *NodeGPUFreq) Value() *crunchio.Buffer {
   }
   v.TruncateRight(1) //Remove the newline
 
-  Hz := strtoi32(v.String())
-  MHz := Hz
-  if n.d > 0 {
-    MHz /= n.d
-  }
+  MHz := strtoi32(v.String()) / 1000 / 1000
 
   v = crunchio.NewBuffer()
   v.Grow(4)

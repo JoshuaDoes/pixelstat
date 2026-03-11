@@ -50,6 +50,16 @@ func perr(err error) {
 	}
 }
 
+// Hertz converts a duration into a frequency rate.
+func Hertz(rate time.Duration) int {
+	return int(time.Second / rate)
+}
+
+// HertzPrecise converts a duration into a frequency rate with the highest precision that Go can muster.
+func HertzPrecise(rate time.Duration) float64 {
+	return float64(time.Second / rate)
+}
+
 // Rate converts a frequency in hertz to a time duration.
 func Rate(hz int) time.Duration {
 	return time.Second / time.Duration(hz)

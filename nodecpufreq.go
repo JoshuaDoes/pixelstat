@@ -29,13 +29,8 @@ func (n *NodeCPUFreq) SetTracker(t *Tracker) {
     policies = append(policies, policy)
   }
 
-  if len(policies) == 0 {
-    return
-  }
-
   for i := 0; i < len(policies); i++ {
-    node, err := NewNodeCPUFreqPolicy(n.policyPath, policies[i])
-    if err == nil {
+    if node, err := NewNodeCPUFreqPolicy(n.policyPath, policies[i]); err == nil {
       t.Register(node)
     }
   }

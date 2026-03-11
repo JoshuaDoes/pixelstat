@@ -12,6 +12,9 @@ var (
 type Tracker struct {
 	nodes []Node
 	vals  map[string]*TrackerValue
+
+	autogranular *bool
+	samemargin *int64
 }
 
 func NewTracker(nodes ...Node) *Tracker {
@@ -21,6 +24,8 @@ func NewTracker(nodes ...Node) *Tracker {
 	for i := 0; i < len(nodes); i++ {
 		t.Register(nodes[i])
 	}
+	off := false
+	t.autogranular = &off
 	return t
 }
 
@@ -34,7 +39,7 @@ func (t *Tracker) Start(maxHz int) {
 		}
 	}
 	for i := 0; i < len(vals); i++ {
-		go vals[i].start(maxHz)
+		vals[i].start(maxHz)
 	}
 }
 
@@ -89,7 +94,17 @@ func (t *Tracker) Register(nodes ...Node) {
 		if n.ValueLen() > 0 {
 			tv := new(TrackerValue)
 			tv.node = n
+			tv.autogranular = t.autogranular
+			tv.samemargin = t.samemargin
 			t.vals[name] = tv
 		}
 	}
+}
+
+func (t *Tracker) SetAutoGranular(autogranular bool) {
+	t.autogranular = &autogranular
+}
+
+func (t *Tracker) SetSameMargin(margin int64) {
+	t.samemargin = &margin
 }

@@ -19,13 +19,20 @@ type TrackerValue struct {
 	max     []float64
 	indexes int
 
+	last *crunchio.Buffer
+	same int64
+	autogranular *bool
+	samemargin *int64
+
+	granularity *time.Duration
+	lastLoop *time.Time
 	ppsTime time.Time
 	ppsLast float64
 	pps     int64
 }
 
 func (tv *TrackerValue) start(maxHz int) {
-	defer recovery()
+	//defer recovery()
 
 	if tv.stopper != nil {
 		return
@@ -39,8 +46,9 @@ func (tv *TrackerValue) start(maxHz int) {
 				rate = rateMax
 			}
 		}
-		hertz := Rate(rate)
-		tv.stopper, _ = Loop(&hertz, tv.getValue)
+		granularity := Rate(rate)
+		tv.granularity = &granularity
+		tv.stopper, tv.lastLoop = Loop(tv.granularity, tv.getValue)
 	}
 }
 
@@ -55,17 +63,19 @@ func (tv *TrackerValue) getValue() {
 	if tv.ppsTime.IsZero() {
 		tv.ppsTime = time.Now()
 	}
+	
+	same := true
 
 	n := tv.node
 	v := n.Value()
 	if v != nil && v.ByteCapacity() > 0 {
+		if *tv.autogranular {
+			tv.last = tv.value
+		}
 		tv.value = v
 		tv.cnt++
 
 		go func(tv *TrackerValue) {
-			tv.Lock()
-			defer tv.Unlock()
-
 			tv.pps++
 			delta := time.Since(tv.ppsTime)
 			if delta.Seconds() >= 1 {
@@ -122,6 +132,40 @@ func (tv *TrackerValue) getValue() {
 				}
 			}
 		}(crunchio.NewBuffer(v.Bytes()), tv)
+	}
+
+	if *tv.autogranular && tv.node.ValueType() != "" {
+		//go func(tv *TrackerValue) {
+			//tv.Lock()
+			//defer tv.Unlock()
+			if tv.last != nil {
+				if tv.last.Size() == tv.value.Size() {
+					p1 := tv.last.Bytes()
+					p2 := tv.value.Bytes()
+					for i, b := range p1 {
+						if p2[i] != b {
+							same = false
+							break
+						}
+					}
+				} else {
+					same = false
+				}
+			} else if (tv.last != nil && tv.value == nil) || (tv.last == nil && tv.value != nil) {
+				same = false
+			}
+			if same {
+				tv.same++
+				if tv.same > *tv.samemargin {
+					hz := HertzPrecise(*tv.granularity)
+					if hz > 1 {
+						diff := *tv.granularity / time.Duration(*tv.samemargin)
+						*tv.granularity += diff
+					}
+					tv.same = 0
+				}
+			}
+		//}(tv)
 	}
 }
 

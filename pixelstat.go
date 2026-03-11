@@ -8,17 +8,20 @@ import (
   "os/signal"
   "runtime"
   "syscall"
-  "time"
 )
 
 var (
-  pollingRate int  = 1000
-  refreshRate int  = 120
-  novrr       bool = false
-  nocpuset    bool = false
-  nonet       bool = false
-  nothermal   bool = false
-  netbits     bool = false
+  pollingRate   int  = 1000
+  refreshRate   int  = 120
+  samemargin    int  = 200
+  autogranular  bool = false
+  novrr         bool = false
+  nocpuset      bool = false
+  nonet         bool = false
+  nothermal     bool = false
+  nodevfreq     bool = false
+  nogpu         bool = false
+  netbits       bool = false
 )
 
 func main() {
@@ -26,21 +29,28 @@ func main() {
 
   pflag.IntVar(&pollingRate, "poll", pollingRate, "max polling rate per node")
   pflag.IntVar(&refreshRate, "rate", refreshRate, "max refresh rate per renderer")
+  pflag.IntVar(&samemargin, "samemargin", samemargin, "margin of same values in a row before using autogranularity")
+  pflag.BoolVar(&autogranular, "autogranular", autogranular, "automatically reduces granularity with same values over time")
   pflag.BoolVar(&novrr, "novrr", false, "disable variable refresh rate")
   pflag.BoolVar(&nocpuset, "nocpuset", false, "disable cpuset nodes")
   pflag.BoolVar(&nonet, "nonet", false, "disable networking nodes")
   pflag.BoolVar(&nothermal, "nothermal", false, "disable thermal nodes")
+  pflag.BoolVar(&nodevfreq, "nodevfreq", false, "disable devfreq nodes")
+  pflag.BoolVar(&nogpu, "nogpu", false, "disable gpu nodes")
   pflag.BoolVar(&netbits, "netbits", false, "use bits instead of bytes for netspeed")
   pflag.Parse()
 
   t := NewTracker()
+  if autogranular {
+    t.SetAutoGranular(true)
+    t.SetSameMargin(int64(samemargin))
+  }
 
-  batteryPaths := []string{"battery", "BAT0"}
-  for _, path := range batteryPaths {
-    battery, err := NewNodeBattery("/sys/class/power_supply/" + path + "/capacity")
+  batteryPaths := []string{"battery", "BAT0", "max77779fg"}
+  for _, battery := range batteryPaths {
+    batteryNode, err := NewNodeBattery(battery, "/sys/class/power_supply/" + battery + "/capacity")
     if err == nil {
-      t.Register(battery)
-      break
+      t.Register(batteryNode)
     }
   }
   for _, path := range batteryPaths {
@@ -64,15 +74,19 @@ func main() {
     break
   }
 
-  if gpufreq, err := NewNodeGPUFreq("/sys/class/devfreq/34f00000.gpu0/cur_freq", 1000000); err == nil {
-    t.Register(gpufreq)
-  } else if gpufreq, err := NewNodeGPUFreq("/sys/devices/platform/1c500000.mali/cur_freq", 1000); err == nil {
-    t.Register(gpufreq)
+  if !nogpu {
+    if gpufreq, err := NewNodeGPUFreq("/sys/devices/platform/1c500000.mali/cur_freq"); err == nil {
+      t.Register(gpufreq)
+    }
   }
 
   t.Register(NewNodeCPUFreq("/sys/devices/system/cpu/cpufreq"))
 
   t.Register(NewNodeCPUBandwidth())
+
+  if !nodevfreq {
+    t.Register(NewNodeDevFreq("/sys/class/devfreq"))
+  }
 
   if !nocpuset {
     t.Register(NewNodeCPUSet("/dev/cpuset"))
@@ -96,14 +110,7 @@ func main() {
   signal.Notify(sig, syscall.SIGKILL) //Process abandoned by kernel, how are we here???
   <-sig
 
-  go t.Close()
-  fmt.Printf("\nShutting down...\n")
-  for {
-    time.Sleep(time.Millisecond * 1)
-    if t.Closed() {
-      break
-    }
-  }
+  t.Close()
   fmt.Println("Goodbye!")
 }
 

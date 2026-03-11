@@ -9,17 +9,22 @@ import (
 type NodeBattery struct {
   sync.Mutex
   *NodeFile
+  ID string
 }
 
-func NewNodeBattery(path string) (*NodeBattery, error) {
+func NewNodeBattery(id, path string) (*NodeBattery, error) {
   n := new(NodeBattery)
   nf, err := NewNodeFile(path)
   n.NodeFile = nf
+  if id == "" {
+    id = "battery"
+  }
+  n.ID = id
   return n, err
 }
 
 func (n *NodeBattery) Name() string {
-  return "battery"
+  return n.ID
 }
 
 func (n *NodeBattery) Rate() int {
